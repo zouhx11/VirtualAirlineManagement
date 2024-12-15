@@ -34,8 +34,8 @@ def create_dashboard(parent_window, on_close_callback, airline_id):
             ttk.Label(overview_frame, text=f"Pilot Name: {pilot[1]}").grid(row=0, column=0, sticky="w", padx=10, pady=5)
             ttk.Label(overview_frame, text=f"Rank: {rank}").grid(row=1, column=0, sticky="w", padx=10, pady=5)
             ttk.Label(overview_frame, text=f"Total Hours for Airline: {total_hours:.2f}").grid(row=2, column=0, sticky="w", padx=10, pady=5)
-            ttk.Label(overview_frame, text=f"Home Hub: {pilot[5]}").grid(row=3, column=0, sticky="w", padx=10, pady=5)
-            ttk.Label(overview_frame, text=f"Current Location: {pilot[6]}").grid(row=4, column=0, sticky="w", padx=10, pady=5)
+            ttk.Label(overview_frame, text=f"Home Hub: {pilot[2]}").grid(row=3, column=0, sticky="w", padx=10, pady=5)
+            ttk.Label(overview_frame, text=f"Current Location: {pilot[3]}").grid(row=4, column=0, sticky="w", padx=10, pady=5)
             ttk.Label(overview_frame, text=f"Total Flights for Airline: {total_flights}").grid(row=5, column=0, sticky="w", padx=10, pady=5)
         except Exception as e:
             messagebox.showerror("Error", f"Error loading pilot overview: {e}")

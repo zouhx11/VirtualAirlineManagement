@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
+from tkinter import simpledialog
 from configparser import ConfigParser
 import os
 from PIL import Image, ImageTk
@@ -30,7 +31,7 @@ def check_pilot_existence():
 
 def prompt_create_pilot():
     """Prompts the user to create a new pilot."""
-    pilot_name = ttk.simpledialog.askstring("Create Pilot", "Enter the pilot's name:")
+    pilot_name = simpledialog.askstring("Create Pilot", "Enter the pilot's name:")
     if pilot_name:
         try:
             add_pilot(pilot_name, home_hub="Unknown", current_location="Unknown")
@@ -111,9 +112,27 @@ class MainApp:
         airline_dropdown.pack(pady=10)
 
         # Make Combobox searchable
-        airline_dropdown.bind("<KeyRelease>", lambda event: self.filter_dropdown(event, airline_dropdown, airlines))
-        airline_dropdown.bind("<FocusIn>", lambda event: airline_dropdown.icursor(len(airline_dropdown.get())))
-        airline_dropdown.bind("<FocusOut>", lambda event: airline_dropdown.focus_set())
+        def filter_dropdown(event):
+            """Filter the dropdown dynamically while keeping it open."""
+            value = airline_dropdown.get().lower()
+            filtered = [f"{airline['name']} (ID: {airline['id']})" for airline in airlines if value in airline['name'].lower()]
+
+            # Temporarily disable the event to prevent recursion
+            #airline_dropdown.unbind("<KeyRelease>")
+            
+            # Update the dropdown values
+            airline_dropdown['values'] = filtered
+            
+            # Keep focus on the dropdown input and cursor position
+            airline_dropdown.focus_set()
+            airline_dropdown.icursor(len(value))  # Set cursor to the end of the input
+            
+            
+
+            # Force the dropdown to stay open
+            #airline_dropdown.event_generate('<Down>')
+        # Re-bind the event after updating
+        airline_dropdown.bind("<KeyRelease>", filter_dropdown)
 
         confirm_button = ttk.Button(self.root, text="Confirm Airline", bootstyle=SUCCESS, command=self.confirm_airline)
         confirm_button.pack(pady=10)
@@ -150,14 +169,6 @@ class MainApp:
             grid_frame.rowconfigure(i, weight=1)
         for j in range(2):
             grid_frame.columnconfigure(j, weight=1)
-
-    def filter_dropdown(self, event, combobox, airlines):
-        """Filters the dropdown items based on user input."""
-        value = combobox.get()
-        filtered = [f"{airline['name']} (ID: {airline['id']})" for airline in airlines if value.lower() in airline['name'].lower()]
-        combobox['values'] = filtered
-        combobox.icursor(len(combobox.get()))  # Maintain cursor position
-        combobox.event_generate('<Down>')
 
     def confirm_airline(self):
         """Confirm the selected airline."""

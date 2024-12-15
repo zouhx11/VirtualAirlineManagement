@@ -2,7 +2,8 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 from configparser import ConfigParser
-from .pilot_ranking_achievements import update_pilot_rank_and_achievements
+from core.database_utils import calculate_rank_and_achievements
+
 import os
 
 # Configuration file
@@ -155,12 +156,10 @@ class PilotManagementGUI:
     def load_pilot_data(self):
         """Load pilot data from the database and update the GUI."""
         try:
-            # Update pilot ranks and achievements before displaying the pilot management
-            update_pilot_rank_and_achievements()
-
             conn = sqlite3.connect(data_paths["userdata"])
             cursor = conn.cursor()
 
+            # Fetch pilot data
             cursor.execute("SELECT id, name, homeHub, currentLocation, rank FROM pilots WHERE id = 1")
             rows = cursor.fetchall()
 
@@ -170,7 +169,11 @@ class PilotManagementGUI:
 
             # Populate the treeview with updated data
             for row in rows:
-                self.pilot_table.insert("", "end", values=row)
+                pilot_id = row[0]  # Assuming ID is the first column
+                airline_id = 1  # Replace with logic to get airline_id dynamically
+                rank, achievements = calculate_rank_and_achievements(pilot_id, airline_id)
+                updated_row = (*row[:-1], rank)  # Update rank in row data
+                self.pilot_table.insert("", "end", values=updated_row)
 
             # Update total flight hours label
             total_hours = self.calculate_total_hours()
@@ -179,6 +182,7 @@ class PilotManagementGUI:
             conn.close()
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
+
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -1,24 +1,37 @@
 import sqlite3
 import logging
 from configparser import ConfigParser
+import os
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_database_path():
     config = ConfigParser()
-    config.read("../config.ini")
+    # Use the parent directory to locate the config file
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.ini")
+    config.read(config_path)
     return config.get("DATABASES", "userdata")
 
-def ensure_table_and_columns(cursor, table_name, columns):
+def ensure_table_exists(cursor, table_name, columns):
     """
-    Ensure the specified table and columns exist in the database.
+    Ensure the specified table exists in the database.
+    If the table does not exist, it will be created with the provided columns.
     """
     logging.info(f"Ensuring table '{table_name}' exists...")
+    column_definitions = ", ".join(f"{col} {defn}" for col, defn in columns.items())
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({column_definitions})")
+    logging.info(f"Table '{table_name}' exists or was created successfully.")
+
+def ensure_columns_exist(cursor, table_name, columns):
+    """
+    Ensure the specified columns exist in the database table.
+    If a column does not exist, it will be added.
+    """
+    logging.info(f"Checking columns for table '{table_name}'...")
     cursor.execute(f"PRAGMA table_info({table_name})")
     existing_columns = {row[1] for row in cursor.fetchall()}
 
-    # Add missing columns
     for column_name, column_definition in columns.items():
         if column_name not in existing_columns:
             logging.info(f"Adding column '{column_name}' to table '{table_name}'...")
@@ -27,6 +40,10 @@ def ensure_table_and_columns(cursor, table_name, columns):
 
 def verify_schema():
     db_path = get_database_path()
+    if not os.path.exists(db_path):
+        logging.error(f"Database file not found at {db_path}")
+        return
+
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
 
@@ -59,7 +76,7 @@ def verify_schema():
                 "date_earned": "TEXT NOT NULL"
             },
             "pilots": {
-                "id": "INTEGER PRIMARY KEY",
+                "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
                 "name": "TEXT NOT NULL",
                 "homeHub": "TEXT",
                 "currentLocation": "TEXT",
@@ -68,9 +85,10 @@ def verify_schema():
             },
         }
 
-        # Verify tables and columns
+        # Ensure tables and columns exist
         for table_name, columns in tables.items():
-            ensure_table_and_columns(cursor, table_name, columns)
+            ensure_table_exists(cursor, table_name, columns)
+            ensure_columns_exist(cursor, table_name, columns)
 
         connection.commit()
         logging.info("Schema verification and updates completed successfully.")

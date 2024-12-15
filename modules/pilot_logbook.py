@@ -1,6 +1,7 @@
 import sqlite3
 from tkinter import Tk, Toplevel, Label, ttk
-from .pilot_ranking_achievements import update_pilot_rank_and_achievements
+from configparser import ConfigParser
+from core.database_utils import calculate_rank_and_achievements
 
 class PilotLogbook:
     def __init__(self, root):
@@ -32,12 +33,21 @@ class PilotLogbook:
         # Load logbook data
         self.load_logbook_data()
 
+    def get_database_path(self):
+        """Fetch database path from config.ini."""
+        config = ConfigParser()
+        config.read("config.ini")
+        return config.get("DATABASES", "userdata", fallback="userdata.db")
+
     def load_logbook_data(self):
         try:
             # Update pilot ranks and achievements before displaying the logbook
-            update_pilot_rank_and_achievements()
+            pilot_id = 1  # Replace with actual pilot ID fetching logic
+            airline_id = 1  # Replace with actual airline ID fetching logic
+            rank, achievements = calculate_rank_and_achievements(pilot_id, airline_id)
 
-            conn = sqlite3.connect("/home/phil/Documents/SimToolkitPro/userdata.db")
+            db_path = self.get_database_path()  # Fetch database path dynamically
+            conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
             # Query the logbook table
