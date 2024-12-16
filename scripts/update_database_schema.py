@@ -81,6 +81,7 @@ def verify_schema():
                 "homeHub": "TEXT",
                 "currentLocation": "TEXT",
                 "rank": "TEXT DEFAULT 'Student Pilot'",
+                "airline_id": "INTEGER DEFAULT NULL",
                 "total_hours": "REAL DEFAULT 0.0"
             },
         }

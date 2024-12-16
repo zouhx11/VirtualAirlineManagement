@@ -4,6 +4,7 @@ from ttkbootstrap.dialogs import Messagebox
 from tkinter import simpledialog
 from configparser import ConfigParser
 import os
+import sqlite3
 from PIL import Image, ImageTk
 from modules.pilot_management_gui import PilotManagementGUI
 from modules.schedule import ScheduleViewer
@@ -171,18 +172,47 @@ class MainApp:
             grid_frame.columnconfigure(j, weight=1)
 
     def confirm_airline(self):
-        """Confirm the selected airline."""
+        """Confirm the selected airline and associate it with the pilot in the database."""
         selected_airline = self.selected_airline.get()
         if not selected_airline or selected_airline == "Select an Airline":
             Messagebox.show_warning("Warning", "Please select an airline!")
-        else:
+            return
+        
+        try:
+            # Extract airline ID and name
             airline_id = int(selected_airline.split("(ID: ")[1].split(")")[0])
-            Messagebox.show_info("Airline Selected", f"You have selected Airline ID: {airline_id}.")
+            airline_name = selected_airline.split(" (ID: ")[0]
+            
+            # Update the pilot's associated airline in the database
+            conn = sqlite3.connect(config.get("DATABASES", "userdata"))
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE pilots
+                SET airline_id = ?
+                WHERE id = 1
+                """,
+                (airline_id,)
+            )
+            conn.commit()
+            conn.close()
+            
+            # Update config and notify the user
             self.save_airline_to_config(selected_airline)
+            Messagebox.show_info("Airline Selected", f"Airline '{airline_name}' (ID: {airline_id}) has been associated with the pilot.")
+        
+        except sqlite3.Error as e:
+            Messagebox.show_error("Error", f"Failed to associate airline with pilot: {e}")
+        except Exception as e:
+            Messagebox.show_error("Error", f"Unexpected error: {e}")
 
     def open_pilot_management(self):
         try:
-            PilotManagementGUI(ttk.Toplevel(self.root))
+            config.read(CONFIG_FILE)  # Reload the config file to get the latest values
+            airline_info = self.selected_airline.get()  # Example: "Qantas (ID: 123)"
+            airline_id = int(airline_info.split("(ID: ")[1].split(")")[0])
+            airline_name = airline_info.split(" (ID: ")[0]
+            PilotManagementGUI(ttk.Toplevel(self.root), airline_id, airline_name)
         except Exception as e:
             Messagebox.show_error("Error", f"Failed to open Pilot Management: {e}")
 

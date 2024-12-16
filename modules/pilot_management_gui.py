@@ -18,9 +18,11 @@ data_paths = {
 }
 
 class PilotManagementGUI:
-    def __init__(self, root):
+    def __init__(self, root, airline_id, airline_name):
         self.root = root
-        self.root.title("Pilot Management")
+        self.airline_id = airline_id  # Airline ID to filter pilots
+        self.airline_name = airline_name  # Airline name for display
+        self.root.title(f"Pilot Management - {self.airline_name} (ID: {self.airline_id})")
         self.create_gui()
         self.load_pilot_data()
 
@@ -42,6 +44,10 @@ class PilotManagementGUI:
 
         jumpseat_button = tk.Button(self.frame, text="Jumpseat", command=self.jumpseat_pilot)
         jumpseat_button.grid(row=3, columnspan=2, pady=10)
+
+        # Label to display selected airline
+        self.airline_label = tk.Label(self.root, text=f"Airline: {self.airline_name} (ID: {self.airline_id})", font=("Arial", 14, "bold"))
+        self.airline_label.pack(pady=5)
 
         # Treeview for displaying pilot data
         self.pilot_table = ttk.Treeview(self.root, columns=("ID", "Name", "Home Hub", "Current Location", "Rank"), show="headings")
@@ -72,9 +78,11 @@ class PilotManagementGUI:
                 """
                 UPDATE pilots
                 SET homeHub = ?
-                WHERE id = 1
+                WHERE airline_id = ? AND id = (
+                    SELECT id FROM pilots WHERE airline_id = ? LIMIT 1
+                )
                 """,
-                (new_home_hub,),
+                (new_home_hub, self.airline_id, self.airline_id),
             )
 
             if cursor.rowcount == 0:
@@ -82,7 +90,6 @@ class PilotManagementGUI:
             else:
                 conn.commit()
                 messagebox.showinfo("Success", "Home Hub updated successfully.")
-                self.root.destroy()
 
             conn.close()
         except sqlite3.Error as e:
@@ -104,9 +111,11 @@ class PilotManagementGUI:
                 """
                 UPDATE pilots
                 SET currentLocation = ?
-                WHERE id = 1
+                WHERE airline_id = ? AND id = (
+                    SELECT id FROM pilots WHERE airline_id = ? LIMIT 1
+                )
                 """,
-                (new_location,),
+                (new_location, self.airline_id, self.airline_id),
             )
 
             if cursor.rowcount == 0:
@@ -117,41 +126,47 @@ class PilotManagementGUI:
                 with open(CONFIG_FILE, "w") as configfile:
                     config.write(configfile)
                 messagebox.showinfo("Success", f"Jumpseat successful! New location: {new_location}")
-                self.root.destroy()
 
             conn.close()
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
 
     def calculate_total_hours(self):
-        """Calculate total flight hours from the logbook."""
+        """Calculate total flight hours from the logbook for the airline."""
         try:
             conn = sqlite3.connect(data_paths["userdata"])
             cursor = conn.cursor()
 
+            # Calculate total hours for this airline
             cursor.execute(
                 """
-                SELECT actualDep, actualArr FROM logbook
-                """
+                SELECT SUM((actualArr - actualDep) / 3600.0) AS total_hours
+                FROM logbook
+                WHERE fleetId IN (
+                    SELECT id FROM fleet WHERE airlineCode = ?
+                )
+                """,
+                (self.airline_id,)
             )
-            rows = cursor.fetchall()
+            result = cursor.fetchone()
+            total_hours = result[0] if result and result[0] is not None else 0.0
 
-            total_minutes = 0
-            for dep, arr in rows:
-                if dep and arr:
-                    try:
-                        dep_minutes = int(dep)
-                        arr_minutes = int(arr)
-                        total_minutes += (arr_minutes - dep_minutes) // 60
-                    except ValueError:
-                        continue
-
-            total_hours = total_minutes / 60
+            # Update pilots table with the total hours
+            cursor.execute(
+                """
+                UPDATE pilots
+                SET total_hours = ?
+                WHERE airline_id = ?
+                """,
+                (total_hours, self.airline_id)
+            )
+            conn.commit()
             conn.close()
+
             return total_hours
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
-            return 0
+            return 0.0
 
     def load_pilot_data(self):
         """Load pilot data from the database and update the GUI."""
@@ -160,8 +175,18 @@ class PilotManagementGUI:
             cursor = conn.cursor()
 
             # Fetch pilot data
-            cursor.execute("SELECT id, name, homeHub, currentLocation, rank FROM pilots WHERE id = 1")
+            cursor.execute(
+                """
+                SELECT id, name, homeHub, currentLocation, rank, total_hours
+                FROM pilots
+                WHERE airline_id = ?
+                """,
+                (self.airline_id,)
+            )
             rows = cursor.fetchall()
+
+            if not rows:
+                messagebox.showwarning("No Data", "No pilots found for this airline.")
 
             # Clear the treeview
             for item in self.pilot_table.get_children():
@@ -169,13 +194,12 @@ class PilotManagementGUI:
 
             # Populate the treeview with updated data
             for row in rows:
-                pilot_id = row[0]  # Assuming ID is the first column
-                airline_id = 1  # Replace with logic to get airline_id dynamically
-                rank, achievements = calculate_rank_and_achievements(pilot_id, airline_id)
-                updated_row = (*row[:-1], rank)  # Update rank in row data
+                pilot_id = row[0]
+                rank, _ = calculate_rank_and_achievements(pilot_id, self.airline_id)
+                updated_row = (*row[:-2], rank, row[-1])  # Include total hours
                 self.pilot_table.insert("", "end", values=updated_row)
 
-            # Update total flight hours label
+            # Calculate total hours and update the label
             total_hours = self.calculate_total_hours()
             self.total_hours_label.config(text=f"Total Flight Hours: {total_hours:.2f} hours")
 
@@ -183,8 +207,9 @@ class PilotManagementGUI:
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", str(e))
 
-
 if __name__ == "__main__":
     root = tk.Tk()
-    gui = PilotManagementGUI(root)
+    airline_id = 1  # Placeholder for testing
+    airline_name = "Test Airline"  # Placeholder for testing
+    gui = PilotManagementGUI(root, airline_id, airline_name)
     root.mainloop()
