@@ -1,28 +1,42 @@
+from typing import Optional, List, Tuple
 import sqlite3
-from configparser import ConfigParser
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
+from core.config_manager import ConfigManager
 
-def get_database_config():
-    config = ConfigParser()
-    config.read("config.ini")
-    return {
-        "userdata": config.get("DATABASES", "userdata")
-    }
+# Singleton ConfigManager instance
+config_manager = ConfigManager()
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("Database_Utils.log"),
+        logging.StreamHandler()
+    ]
+)
 
-# Configuration for the database
-DATABASE_PATH = get_database_config()["userdata"]  # Fixing the database path key
-
-def connect_to_database():
-    print(f"Connecting to database at: {DATABASE_PATH}")
-    connection = sqlite3.connect(DATABASE_PATH)
-    print(f"Connection: {connection}")
-    return connection
-
-def get_airline_id_from_fleet(fleet_id):
-    """Fetch airline ID based on fleet ID."""
-    connection = connect_to_database()
+def connect_to_database() -> Optional[sqlite3.Connection]:
+    """
+    Create and return a new database connection using the userdata database path
+    from the configuration manager.
+    """
+    user_db_path = config_manager.get_database_path('userdata')
     try:
-        cursor = connection.cursor()
+        connection = sqlite3.connect(user_db_path)
+        return connection
+    except sqlite3.Error as e:
+        print(f"Database connection error: {e}")
+        return None
+
+def get_airline_id_from_fleet(fleet_id: int) -> Optional[str]:
+    """Fetch airline ID based on fleet ID."""
+    conn = connect_to_database()
+    if conn is None:
+        return None
+
+    try:
+        cursor = conn.cursor()
         cursor.execute("SELECT airlineCode FROM fleet WHERE id = ?", (fleet_id,))
         result = cursor.fetchone()
         return result[0] if result else None
@@ -30,19 +44,20 @@ def get_airline_id_from_fleet(fleet_id):
         print(f"Database error: {e}")
         return None
     finally:
-        connection.close()
+        conn.close()
 
-def calculate_rank_and_achievements(pilot_id, airline_id):
+def calculate_rank_and_achievements(pilot_id: int, airline_id: str) -> Tuple[str, List[Tuple[str, str]]]:
     """
     Calculate the rank and achievements for a pilot based on their flight hours for a specific airline.
+    Returns a tuple: (rank, list_of_achievements).
     """
-    connection = connect_to_database()
-    if not connection:
+    conn = connect_to_database()
+    if conn is None:
         print("Database connection failed.")
         return "Student Pilot", []
 
     try:
-        cursor = connection.cursor()
+        cursor = conn.cursor()
 
         # Calculate total hours for the given airline
         cursor.execute("""
@@ -54,9 +69,8 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
         """, (airline_id,))
         result = cursor.fetchone()
         total_hours = result[0] if result and result[0] is not None else 0.0
-        print(f"Total Hours: {total_hours}")
 
-        # Determine rank
+        # Determine rank based on total hours
         rank_thresholds = [
             (0, "Student Pilot"),
             (10, "First Officer"),
@@ -76,8 +90,8 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
                 SELECT id FROM fleet WHERE airlineCode = ?
             )
         """, (airline_id,))
-        unique_destinations = len(cursor.fetchall()) if cursor.fetchall() else 0
-        print(f"Unique Destinations: {unique_destinations}")
+        destinations = cursor.fetchall()
+        unique_destinations = len(destinations) if destinations else 0
 
         # Calculate hours per aircraft
         cursor.execute("""
@@ -88,7 +102,6 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
             GROUP BY airframeIcao
         """, (airline_id,))
         aircraft_hours = cursor.fetchall() or []
-        print(f"Aircraft Hours: {aircraft_hours}")
 
         # Fetch existing achievements
         cursor.execute("""
@@ -97,12 +110,8 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
             WHERE pilot_id = ? AND airlineId = ?
         """, (pilot_id, airline_id))
         existing_achievements = {row[0] for row in cursor.fetchall()}
-        print(f"Existing Achievements: {existing_achievements}")
 
-        # Achievements to add
-        achievements_to_add = []
-
-        # First Flight Achievement
+        # Count total flights for achievements
         cursor.execute("""
             SELECT COUNT(*)
             FROM logbook
@@ -110,13 +119,17 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
                 SELECT id FROM fleet WHERE airlineCode = ?
             )
         """, (airline_id,))
-        result = cursor.fetchone()
-        flight_count = result[0] if result and result[0] is not None else 0
-        print(f"Flight Count: {flight_count}")
+        flight_result = cursor.fetchone()
+        flight_count = flight_result[0] if flight_result and flight_result[0] is not None else 0
+
+        # Determine new achievements to add
+        achievements_to_add = []
+
+        # First Flight Achievement
         if flight_count >= 1 and "First Flight" not in existing_achievements:
             achievements_to_add.append(("First Flight", "now"))
 
-        # Hours-based Achievements for Specific Aircraft
+        # Hours-based Achievements for each aircraft
         for aircraft, hours in aircraft_hours:
             if hours >= 10 and f"First Officer ({aircraft})" not in existing_achievements:
                 achievements_to_add.append((f"First Officer ({aircraft})", "now"))
@@ -136,7 +149,7 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
                 VALUES (?, ?, ?, DATE(?))
             """, (pilot_id, airline_id, achievement, date_earned))
 
-        connection.commit()
+        conn.commit()
 
         # Fetch updated achievements
         cursor.execute("""
@@ -151,11 +164,14 @@ def calculate_rank_and_achievements(pilot_id, airline_id):
         print(f"Database error: {e}")
         return "Student Pilot", []
     finally:
-        connection.close()
+        conn.close()
 
-
-def add_pilot(name, home_hub="Unknown", current_location="Unknown", connection=None):
+def add_pilot(name: str, home_hub: str = "Unknown", current_location: str = "Unknown", connection: Optional[sqlite3.Connection] = None) -> None:
+    """Add a new pilot to the database."""
     conn = connection or connect_to_database()
+    if conn is None:
+        return
+
     try:
         cursor = conn.cursor()
         cursor.execute(
@@ -169,8 +185,12 @@ def add_pilot(name, home_hub="Unknown", current_location="Unknown", connection=N
         if connection is None:
             conn.close()
 
-def fetch_pilot_data(connection=None):
+def fetch_pilot_data(connection: Optional[sqlite3.Connection] = None) -> List[Tuple]:
+    """Fetch all pilot data from the database."""
     conn = connection or connect_to_database()
+    if conn is None:
+        return []
+
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM pilots")
@@ -183,162 +203,400 @@ def fetch_pilot_data(connection=None):
         if connection is None:
             conn.close()
 
-# Calculate pilot statistics
-def calculate_pilot_statistics(pilot_id, airline_id):
-    connection = connect_to_database()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            
-            # Calculate total flight hours for the specific airline
-            cursor.execute("""
-                SELECT SUM((actualArr - actualDep) / 3600.0) AS total_hours
-                FROM logbook
-                WHERE status = 'COMPLETED' AND fleetId IN (
-                    SELECT id FROM fleet WHERE airlineCode = ?
-                )
-            """, (airline_id,))
-            result = cursor.fetchone()
-            total_hours = result[0] if result[0] else 0.0
-            
-            # Calculate total flights for the specific airline
-            cursor.execute("""
-                SELECT COUNT(*) AS total_flights
-                FROM logbook
-                WHERE status = 'COMPLETED' AND fleetId IN (
-                    SELECT id FROM fleet WHERE airlineCode = ?
-                )
-            """, (airline_id,))
-            result = cursor.fetchone()
-            total_flights = result[0] if result[0] else 0
-            
-            connection.close()
-            return total_flights, total_hours
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return 0, 0.0
+def calculate_pilot_statistics(pilot_id: int, airline_id: str) -> Tuple[int, float]:
+    """
+    Calculate total flights and total hours for a given pilot and airline.
+    Returns a tuple (total_flights, total_hours).
+    """
+    conn = connect_to_database()
+    if conn is None:
+        return 0, 0.0
 
-def fetch_flight_log(pilot_id, airline_id):
-    connection = connect_to_database()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            cursor.execute("""
-                SELECT flightCallsign, Dep, Arr, 
-                       actualDep, actualArr 
-                FROM logbook 
-                WHERE status = 'COMPLETED' AND fleetId IN (
-                    SELECT id FROM fleet WHERE airlineCode = ?
-                )
-            """, (airline_id,))
-            rows = cursor.fetchall()
-            connection.close()
-            return [
-                (
-                    row[0],
-                    row[1],
-                    row[2],
-                    datetime.utcfromtimestamp(row[3]).strftime('%Y-%m-%d %H:%M:%S') if row[3] else '-',
-                    datetime.utcfromtimestamp(row[4]).strftime('%Y-%m-%d %H:%M:%S') if row[4] else '-'
-                )
-                for row in rows
-            ]
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return []
-
-def fetch_achievements(pilot_id, airline_id):
-    connection = connect_to_database()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            cursor.execute("""
-                SELECT achievement, date_earned 
-                FROM achievements 
-                WHERE pilot_id = ? AND airlineId = ?
-            """, (pilot_id, airline_id))
-            data = cursor.fetchall()
-            connection.close()
-            return data
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return []
-
-# Keep this function for non-airline-specific achievement queries
-def fetch_achievements_general(pilot_id):
-    connection = connect_to_database()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            cursor.execute("SELECT achievement, date_earned FROM achievements WHERE pilot_id = ?", (pilot_id,))
-            data = cursor.fetchall()
-            connection.close()
-            return data
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return []
-
-# Fetch fleet data with filtering
-def fetch_fleet_data(selected_airline_code=None, pilot_location=None):
-    connection = connect_to_database()
     try:
-        cursor = connection.cursor()
-        query = """
-            SELECT registration, airframeIcao, logHours, logLocation
-            FROM fleet
-        """
-        filters = []
-        params = []
+        cursor = conn.cursor()
 
-        if selected_airline_code is not None:
-            airline_id = selected_airline_code if isinstance(selected_airline_code, int) else int(selected_airline_code.split("(ID: ")[1].split(")")[0])
-            filters.append("airlineCode = ?")
-            params.append(airline_id)
+        # Total hours
+        cursor.execute("""
+            SELECT SUM((actualArr - actualDep) / 3600.0) AS total_hours
+            FROM logbook
+            WHERE status = 'COMPLETED' AND fleetId IN (
+                SELECT id FROM fleet WHERE airlineCode = ?
+            )
+        """, (airline_id,))
+        hours_result = cursor.fetchone()
+        total_hours = hours_result[0] if hours_result and hours_result[0] else 0.0
 
-        if pilot_location is not None and isinstance(pilot_location, str):
-            filters.append("logLocation = ?")
-            params.append(pilot_location)
-        else:
-            print(f"Invalid pilot_location provided: {pilot_location}")
+        # Total flights
+        cursor.execute("""
+            SELECT COUNT(*) AS total_flights
+            FROM logbook
+            WHERE status = 'COMPLETED' AND fleetId IN (
+                SELECT id FROM fleet WHERE airlineCode = ?
+            )
+        """, (airline_id,))
+        flights_result = cursor.fetchone()
+        total_flights = flights_result[0] if flights_result and flights_result[0] else 0
 
-        if filters:
-            query += " WHERE " + " AND ".join(filters)
+        return total_flights, total_hours
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return 0, 0.0
+    finally:
+        conn.close()
 
-        print(f"Executing query: {query} with params={params}")
-        cursor.execute(query, tuple(params))
+def fetch_flight_log(pilot_id: int, airline_id: str) -> List[Tuple[str, str, str, str, str]]:
+    """
+    Fetch the flight log for a given pilot and airline, including flight callsign, departure,
+    arrival, and actual departure/arrival times.
+    """
+    conn = connect_to_database()
+    if conn is None:
+        return []
 
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT flightCallsign, Dep, Arr, actualDep, actualArr
+            FROM logbook
+            WHERE status = 'COMPLETED' AND fleetId IN (
+                SELECT id FROM fleet WHERE airlineCode = ?
+            )
+        """, (airline_id,))
+        rows = cursor.fetchall()
+        return [
+            (
+                row[0],
+                row[1],
+                row[2],
+                datetime.utcfromtimestamp(row[3]).strftime('%Y-%m-%d %H:%M:%S') if row[3] else '-',
+                datetime.utcfromtimestamp(row[4]).strftime('%Y-%m-%d %H:%M:%S') if row[4] else '-'
+            )
+            for row in rows
+        ]
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def fetch_achievements(pilot_id: int, airline_id: str) -> List[Tuple[str, str]]:
+    """Fetch achievements for a given pilot and airline."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT achievement, date_earned
+            FROM achievements
+            WHERE pilot_id = ? AND airlineId = ?
+        """, (pilot_id, airline_id))
         data = cursor.fetchall()
-        print(f"Query result: {data}")
-        connection.close()
         return data
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return []
+    finally:
+        conn.close()
 
-# Fetch Schedules by location and airline
-def fetch_schedules_by_location_and_airline(current_location, airline_id):
+def fetch_achievements_general(pilot_id: int) -> List[Tuple[str, str]]:
+    """Fetch achievements for a given pilot across all airlines."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT achievement, date_earned FROM achievements WHERE pilot_id = ?", (pilot_id,))
+        data = cursor.fetchall()
+        return data
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def fetch_fleet_data(selected_airline_code: Optional[str] = None, pilot_location: Optional[str] = None) -> List[Tuple[int, str, str, float, str]]:
     """
-    Fetch schedules filtered by current location and valid airline using fleetId.
+    Fetch fleet data, optionally filtered by airline code and pilot location.
+    Returns tuples of (id, registration, airframeIcao, logHours, logLocation).
     """
-    connection = connect_to_database()
-    if connection:
-        try:
-            cursor = connection.cursor()
-            query = """
-                SELECT flightNumber, dep, arr, fleetReg
-                FROM logbook
-                WHERE status = 'SCHEDULED'
-                AND dep = ?
-                AND fleetId IN (
-                    SELECT id
-                    FROM fleet
-                    WHERE airlineCode = ?
-                )
-            """
-            cursor.execute(query, (current_location, airline_id))
-            rows = cursor.fetchall()
-            connection.close()
-            return rows
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return []
+    conn = connect_to_database()
+    if conn is None:
+        return []
+    try:
+        cursor = conn.cursor()
+        query = "SELECT id, registration, airframeIcao, logHours, logLocation FROM fleet"
+        filters = []
+        params = []
+
+        if selected_airline_code is not None:
+            # Extract airline_id from the string if needed
+            if isinstance(selected_airline_code, str) and "(ID: " in selected_airline_code:
+                airline_id = int(selected_airline_code.split("(ID: ")[1].split(")")[0])
+            else:
+                airline_id = selected_airline_code
+            filters.append("airlineCode = ?")
+            params.append(airline_id)
+
+        # If we do NOT want to limit by pilot_location initially, comment the next lines.
+        # if pilot_location is not None and isinstance(pilot_location, str):
+        #     filters.append("logLocation = ?")
+        #     params.append(pilot_location)
+
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+
+        cursor.execute(query, tuple(params))
+        data = cursor.fetchall()
+        return data  # Each row: (id, registration, airframeIcao, logHours, logLocation)
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def update_aircraft_location(aircraft_id: int, new_location: str) -> bool:
+    """
+    Update the logLocation of a specific aircraft by its ID.
+    """
+    conn = connect_to_database()
+    if conn is None:
+        return False
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE fleet
+            SET logLocation = ?
+            WHERE id = ?
+        """, (new_location, aircraft_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def fetch_schedules_by_location_and_airline(current_location: str, airline_id: str) -> List[Tuple[str, str, str, str]]:
+    """
+    Fetch scheduled flights for a given location and airline ID.
+    Returns a list of tuples with (flightNumber, dep, arr, fleetReg).
+    """
+    conn = connect_to_database()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+        query = """
+            SELECT flightNumber, dep, arr, fleetReg
+            FROM logbook
+            WHERE status = 'SCHEDULED'
+            AND dep = ?
+            AND fleetId IN (
+                SELECT id
+                FROM fleet
+                WHERE airlineCode = ?
+            )
+        """
+        cursor.execute(query, (current_location, airline_id))
+        rows = cursor.fetchall()
+        return rows
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def calculate_pilot_analytics(pilot_id: int, airline_id: str) -> dict:
+    """
+    Calculate analytics for the pilot's airline:
+    - Total landings
+    - Average touchdown vertical speed (fpm)
+    - Average touchdown g-force
+    This assumes all flights under the given airline_id are associated with this pilot.
+    """
+
+    conn = connect_to_database()
+    if conn is None:
+        return {"total_landings": 0, "avg_vs": 0.0, "avg_gf": 0.0}
+
+    try:
+        cursor = conn.cursor()
+        # Join landings with logbook and fleet to filter by airline_id
+        # Only consider completed flights
+        cursor.execute("""
+            SELECT 
+                COUNT(*) AS total_landings,
+                AVG(touchdownVerticalSpeed) AS avg_vs,
+                AVG(touchdownGforce) AS avg_gf
+            FROM landings
+            JOIN logbook ON landings.flightId = logbook.id
+            JOIN fleet ON logbook.fleetId = fleet.id
+            WHERE logbook.status = 'COMPLETED'
+              AND fleet.airlineCode = ?
+        """, (airline_id,))
+
+        row = cursor.fetchone()
+        if row:
+            total_landings = row[0] if row[0] is not None else 0
+            avg_vs = row[1] if row[1] is not None else 0.0
+            avg_gf = row[2] if row[2] is not None else 0.0
+        else:
+            total_landings = 0
+            avg_vs = 0.0
+            avg_gf = 0.0
+
+        return {
+            "total_landings": total_landings,
+            "avg_vs": avg_vs,
+            "avg_gf": avg_gf
+        }
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return {"total_landings": 0, "avg_vs": 0.0, "avg_gf": 0.0}
+    finally:
+        conn.close()
+
+def update_pilot_property(airline_id, property_name, value):
+    """Update a property of the pilot associated with the given airline."""
+    conn = connect_to_database()
+    if conn is None:
+        return False
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            UPDATE pilots
+            SET {property_name} = ?
+            WHERE airline_id = ? AND id = (
+                SELECT id FROM pilots WHERE airline_id = ? LIMIT 1
+            )
+        """, (value, airline_id, airline_id))
+        if cursor.rowcount == 0:
+            print(f"Failed to update {property_name}.")
+            return False
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"Database Error: {e}")
+        return False
+    finally:
+        conn.close()
+
+def fetch_pilot_data(airline_id):
+    """Fetch pilot data for the specified airline."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, homeHub, currentLocation, rank, total_hours
+            FROM pilots
+            WHERE airline_id = ?
+        """, (airline_id,))
+        return cursor.fetchall()
+    except sqlite3.Error as e:
+        print(f"Database Error: {e}")
+        return []
+    finally:
+        conn.close()
+
+def fetch_latest_location(airline_id: int) -> Optional[str]:
+    """Fetch the latest location for the given airline_id."""
+    conn = connect_to_database()
+    if conn is None:
+        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT current_location FROM airlines WHERE id = ?", (airline_id,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+    finally:
+        conn.close()
+
+def calculate_total_hours(airline_id):
+    """Calculate total flight hours for the specified airline."""
+    
+    total_hours = 0.0
+    conn = connect_to_database()
+    if conn is None:
+        return 0.0
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT SUM((actualArr - actualDep) / 3600.0) AS total_hours
+            FROM logbook
+            WHERE fleetId IN (
+                SELECT id FROM fleet WHERE airlineCode = ?
+            )
+        """, (airline_id,))
+        result = cursor.fetchone()
+        total_hours = result[0] if result and result[0] is not None else 0.0
+        cursor.execute("""
+            UPDATE pilots
+            SET total_hours = ?
+            WHERE airline_id = ?
+        """, (total_hours, airline_id))
+        conn.commit()
+        return total_hours
+    except sqlite3.Error as e:
+        print(f"Database Error: {e}")
+        return 0.0
+    finally:
+        conn.close()
+
+def fetch_latest_location(pilot_id: int) -> Optional[str]:
+    """Fetch the latest location for the given pilot_id."""
+    conn = connect_to_database()
+    if conn is None:
+        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT currentLocation FROM pilots WHERE id = ?", (pilot_id,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+    finally:
+        conn.close()
+
+def fetch_logbook_data(airline_id: int):
+    """Fetch logbook data for the given airline_id."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT flightNumber, dep, arr, actualDep, actualArr, status, (actualArr - actualDep) / 3600.0 AS duration
+            FROM logbook
+            WHERE status = 'COMPLETED'
+        """)
+        rows = cursor.fetchall()
+        logging.info(f'fetched {len(rows)} logbook entries')
+        return [
+            (
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                row[4],
+                row[5],
+                row[6]
+            )
+            for row in rows
+        ]
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return []
+    finally:
+        conn.close()
