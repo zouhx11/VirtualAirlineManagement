@@ -1,10 +1,17 @@
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from ttkbootstrap.dialogs import Messagebox
-from tkinter import simpledialog
+# main.py
+
+import logging
 import sqlite3
+from tkinter import simpledialog, BOTH
+from typing import Optional
+
+# Third-party imports
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import SUCCESS, INFO, WARNING, PRIMARY, SECONDARY, LIGHT, DANGER, LEFT
+from ttkbootstrap.dialogs import Messagebox
 from PIL import Image, ImageTk
 
+# Local application imports
 from modules.pilot_management_gui import PilotManagementGUI
 from modules.schedule import ScheduleViewer
 from modules.fleet_management import FleetManagement
@@ -12,18 +19,17 @@ from modules.pilot_logbook import PilotLogbook
 from modules.pilot_dashboard import create_dashboard
 from core.settings import open_settings
 from core.database_utils import fetch_pilot_data, add_pilot
-from core.utils import load_airlines_json
-
-from core.config_manager import ConfigManager  # Using the provided ConfigManager
-from typing import Optional
+from core.utils import load_airlines_json, create_button, debounce
+from core.config_manager import ConfigManager
 
 def clear_window(root):
-    """Clears all widgets in the main window."""
+    """Clear all widgets in the main window."""
     for widget in root.winfo_children():
         widget.destroy()
 
 class MainApp:
     def __init__(self, root):
+        """Initialize the main application."""
         self.root = root
         self.config_manager = ConfigManager()
 
@@ -125,7 +131,7 @@ class MainApp:
         airline_dropdown.pack(pady=10)
 
         # Filter function for the combobox
-        airline_dropdown.bind("<KeyRelease>", lambda e: self.filter_dropdown(e, airline_dropdown, all_airlines))
+        self.setup_dropdown(airline_dropdown, all_airlines)
 
         confirm_button = ttk.Button(self.root, text="Confirm Airline", bootstyle=SUCCESS, command=self.confirm_airline)
         confirm_button.pack(pady=10)
@@ -133,6 +139,9 @@ class MainApp:
         grid_frame = ttk.Frame(self.root, padding=20)
         grid_frame.pack(fill=BOTH, expand=True)
 
+        self.setup_buttons(grid_frame)
+
+    def setup_buttons(self, grid_frame):
         buttons = [
             ("Pilot Management", SUCCESS, self.open_pilot_management),
             ("Flight Schedules", PRIMARY, self.open_flight_schedule),
@@ -144,20 +153,15 @@ class MainApp:
         ]
 
         for idx, (text, style, command) in enumerate(buttons):
-            ttk.Button(
-                grid_frame,
-                text=text,
-                image=self.icons[text],
-                compound=LEFT,
-                bootstyle=style,
-                command=command
-            ).grid(row=idx // 2, column=idx % 2, padx=10, pady=10, sticky=NSEW)
+            btn = create_button(grid_frame, text, style, command, self.icons[text])
+            btn.grid(row=idx // 2, column=idx % 2, padx=10, pady=10, sticky="NSEW")
 
         for i in range((len(buttons) + 1) // 2):
             grid_frame.rowconfigure(i, weight=1)
         for j in range(2):
             grid_frame.columnconfigure(j, weight=1)
 
+    @debounce(300)  # 300 milliseconds debounce delay
     def filter_dropdown(self, _event, combobox, all_values):
         """Filter the dropdown dynamically based on user input."""
         value = combobox.get().lower()
@@ -234,8 +238,7 @@ class MainApp:
 
     def open_pilot_logbook(self):
         try:
-            airline_id, _ = self.parse_airline_selection(self.selected_airline.get())
-            PilotLogbook(ttk.Toplevel(self.root), airline_id)
+            PilotLogbook(ttk.Toplevel(self.root))  # Removed airline_id
         except Exception as e:
             Messagebox.show_error("Error", f"Failed to open Pilot Logbook: {e}")
 
@@ -252,6 +255,9 @@ class MainApp:
             open_settings(self.root)
         except Exception as e:
             Messagebox.show_error("Error", f"Failed to open Settings: {e}")
+
+    def setup_dropdown(self, combobox, all_values):
+        combobox.bind("<KeyRelease>", lambda event: self.filter_dropdown(event, combobox, all_values))
 
 if __name__ == "__main__":
     # Initialize with a base theme (overridden by config in __init__)

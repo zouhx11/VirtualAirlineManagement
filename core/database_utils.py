@@ -3,6 +3,7 @@ import sqlite3
 import logging
 from datetime import datetime, timezone
 from core.config_manager import ConfigManager
+from core.utils import convert_to_int  # Import the helper function
 
 # Singleton ConfigManager instance
 config_manager = ConfigManager()
@@ -26,7 +27,7 @@ def connect_to_database() -> Optional[sqlite3.Connection]:
         connection = sqlite3.connect(user_db_path)
         return connection
     except sqlite3.Error as e:
-        print(f"Database connection error: {e}")
+        logging.error(f"Database connection error: {e}")
         return None
 
 def get_airline_id_from_fleet(fleet_id: int) -> Optional[str]:
@@ -41,7 +42,7 @@ def get_airline_id_from_fleet(fleet_id: int) -> Optional[str]:
         result = cursor.fetchone()
         return result[0] if result else None
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        logging.error(f"Database error: {e}")
         return None
     finally:
         conn.close()
@@ -195,9 +196,17 @@ def fetch_pilot_data(connection: Optional[sqlite3.Connection] = None) -> List[Tu
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM pilots")
         data = cursor.fetchall()
-        return data
+
+        # Convert timestamp fields from strings to integers if necessary and handle None
+        processed_data = []
+        for row in data:
+            *pilot_info, created_at = row
+            created_at = int(created_at) if created_at and str(created_at).isdigit() else None
+            processed_data.append((*pilot_info, created_at))
+
+        return processed_data
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        logging.error(f"Database error: {e}")
         return []
     finally:
         if connection is None:
@@ -569,34 +578,67 @@ def fetch_latest_location(pilot_id: int) -> Optional[str]:
     finally:
         conn.close()
 
-def fetch_logbook_data(airline_id: int):
-    """Fetch logbook data for the given airline_id."""
+def fetch_logbook_data() -> List[Tuple]:
+    """
+    Fetch all logbook entries with status 'COMPLETED'.
+    """
     conn = connect_to_database()
     if conn is None:
+        logging.warning("Failed to establish database connection.")
         return []
+
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT flightNumber, dep, arr, actualDep, actualArr, status, (actualArr - actualDep) / 3600.0 AS duration
+            SELECT flightNumber, dep, arr, scheduledDep, actualDep, scheduledArr, actualArr, status, fleetId
             FROM logbook
             WHERE status = 'COMPLETED'
         """)
         rows = cursor.fetchall()
-        logging.info(f'fetched {len(rows)} logbook entries')
-        return [
-            (
-                row[0],
-                row[1],
-                row[2],
-                row[3],
-                row[4],
-                row[5],
-                row[6]
-            )
-            for row in rows
-        ]
+
+        logging.debug(f"Fetched {len(rows)} rows from the database.")
+
+        # Convert timestamp fields from integers and handle None
+        processed_rows = []
+        for row in rows:
+            flightNumber, dep, arr, scheduledDep, actualDep, scheduledArr, actualArr, status, fleetId = row
+            scheduledDep = convert_to_int(scheduledDep)
+            actualDep = convert_to_int(actualDep)
+            scheduledArr = convert_to_int(scheduledArr)
+            actualArr = convert_to_int(actualArr)
+            processed_rows.append((flightNumber, dep, arr, scheduledDep, actualDep, scheduledArr, actualArr, status, fleetId))
+
+            # Log the converted values
+            logging.debug(f"Processed Row: flightNumber={flightNumber}, dep={dep}, arr={arr}, "
+                          f"scheduledDep={scheduledDep}, actualDep={actualDep}, "
+                          f"scheduledArr={scheduledArr}, actualArr={actualArr}, status={status}, fleetId={fleetId}")
+
+        logging.debug(f"Processed {len(processed_rows)} rows for display.")
+        return processed_rows
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        logging.error(f"Database error in fetch_logbook_data: {e}")
         return []
     finally:
         conn.close()
+
+def get_logbook_table_columns():
+    conn = connect_to_database()
+    if conn is None:
+        logging.error("Failed to connect to the database.")
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(logbook);")
+        columns = cursor.fetchall()
+        column_names = [column[1] for column in columns]
+        return column_names
+    except sqlite3.Error as e:
+        logging.error(f"Error fetching table info: {e}")
+        return []
+    finally:
+        conn.close()
+
+# Example usage:
+if __name__ == "__main__":
+    columns = get_logbook_table_columns()
+    print("Logbook table columns:", columns)

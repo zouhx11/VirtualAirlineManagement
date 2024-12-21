@@ -1,7 +1,12 @@
 import json
 import os
 from json import JSONDecodeError
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import LEFT
+import functools
+import threading
 from core.config_manager import ConfigManager
+import logging
 
 config_manager = ConfigManager("config.ini")
 
@@ -28,3 +33,48 @@ def load_airlines_json():
         print(f"JSONDecodeError: Invalid JSON in {json_file_path}: {e}")
 
     return []
+
+
+
+def create_button(parent, text, style, command, icon):
+    return ttk.Button(
+        parent,
+        text=text,
+        image=icon,
+        compound=LEFT,
+        bootstyle=style,
+        command=command
+    )
+
+
+def debounce(wait_time):
+    """Decorator to debounce a function using Tkinter's after method."""
+    def decorator(fn):
+        @functools.wraps(fn)
+        def debounced(self, *args, **kwargs):
+            if hasattr(self, '_debounce_id'):
+                self.root.after_cancel(self._debounce_id)
+            self._debounce_id = self.root.after(wait_time, lambda: fn(self, *args, **kwargs))
+        return debounced
+    return decorator
+
+def convert_to_int(value):
+    """Safely convert a value to int, return None if conversion fails."""
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if value.isdigit():
+            return int(value)
+        else:
+            try:
+                converted_value = int(float(value))
+                logging.debug(f"convert_to_int: Converted string '{value}' to integer '{converted_value}'.")
+                return converted_value
+            except ValueError:
+                logging.error(f"convert_to_int: Cannot convert value '{value}' to int.")
+                return None
+    if isinstance(value, float):
+        return int(value)
+    logging.error(f"convert_to_int: Unsupported type '{type(value)}' for value '{value}'.")
+    return None

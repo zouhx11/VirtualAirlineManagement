@@ -2,6 +2,7 @@ import sqlite3
 import logging
 from configparser import ConfigParser
 import os
+from datetime import datetime
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -101,5 +102,30 @@ def verify_schema():
         connection.close()
         logging.info("Database connection closed.")
 
+def update_null_timestamps():
+    db_path = get_database_path()
+    if not os.path.exists(db_path):
+        logging.error(f"Database file not found at {db_path}")
+        return
+
+    connection = sqlite3.connect(db_path)
+    cursor = connection.cursor()
+
+    try:
+        # Update NULL timestamps to the current Unix timestamp
+        current_timestamp = int(datetime.utcnow().timestamp())
+        cursor.execute("""
+            UPDATE logbook
+            SET scheduledDep = ?, actualDep = ?, scheduledArr = ?, actualArr = ?
+            WHERE scheduledDep IS NULL OR actualDep IS NULL OR scheduledArr IS NULL OR actualArr IS NULL
+        """, (current_timestamp, current_timestamp, current_timestamp, current_timestamp))
+        connection.commit()
+        logging.info("Updated NULL timestamps with current Unix timestamp.")
+    except sqlite3.Error as e:
+        logging.error(f"Error updating timestamps: {e}")
+    finally:
+        connection.close()
+
 if __name__ == "__main__":
     verify_schema()
+    update_null_timestamps()

@@ -2,6 +2,7 @@ import sqlite3
 import configparser
 import os
 import logging
+from core.database_utils import connect_to_database
 
 def setup_logging():
     logging.basicConfig(
@@ -26,7 +27,8 @@ def ensure_table_exists(cursor):
             name TEXT NOT NULL,
             homeHub TEXT DEFAULT 'Unknown',
             currentLocation TEXT DEFAULT 'Unknown',
-            total_hours REAL DEFAULT 0.0
+            total_hours REAL DEFAULT 0.0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))  -- Unix timestamp
         )'''
     )
     logging.info("'pilots' table verified or created successfully.")
@@ -47,32 +49,18 @@ def main():
     setup_logging()
     logging.info("Starting 'create_pilots_table' script...")
 
-    db_path = get_database_path()
-    logging.info(f"Using database path: {db_path}")
-
-    if not os.path.exists(db_path):
-        logging.error(f"Database file not found at {db_path}")
-        return
-
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-
-        ensure_table_exists(cursor)
-
-        # Ensure necessary columns exist
-        add_column_if_missing(cursor, "pilots", "homeHub", "TEXT DEFAULT 'Unknown'")
-        add_column_if_missing(cursor, "pilots", "currentLocation", "TEXT DEFAULT 'Unknown'")
-
-        conn.commit()
-        logging.info("Database schema is up to date.")
-
-    except sqlite3.Error as e:
-        logging.error(f"Database error: {e}")
-
-    finally:
-        conn.close()
-        logging.info("Database connection closed.")
+    conn = connect_to_database()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            ensure_table_exists(cursor)
+            conn.commit()
+            logging.info("Database schema is up to date.")
+        except sqlite3.Error as e:
+            logging.error(f"Database error: {e}")
+        finally:
+            conn.close()
+            logging.info("Database connection closed.")
 
 if __name__ == "__main__":
     main()
