@@ -54,10 +54,18 @@ Virtual Airline Management is a Python-based application designed to simulate an
 
     Update the config.ini file with your AeroAPI credentials and other configurations.
     ```sh
+    [DATABASES]
+    userdata = C:\\users\\username\\Documents\\SimToolkitPro\\userdata.db
+   
+    [PREFERENCES]
+    theme = cyborg
+    data_refresh_rate = 30
+    selected_airline = Qantas (ID: 4093)
+    homehub = YSSY
+    current_location = YSSY
+   
     [AeroAPI]
     api_key = YOUR_API_KEY
-    api_secret = YOUR_API_SECRET
-    current_location = YOUR_CURRENT_LOCATION
     ```
 
 7. **Run the Application:**
