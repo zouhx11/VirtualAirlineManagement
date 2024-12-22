@@ -2,11 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import random
+import time
 from datetime import datetime
 from ttkbootstrap.dialogs import Messagebox
 from core.database_utils import fetch_schedules_by_location_and_airline, fetch_fleet_data, update_aircraft_location, fetch_latest_location
 from core.config_manager import ConfigManager
 from core.utils import load_airlines_json
+from datetime import timedelta
+import requests  # Add this import at the top
 
 class ScheduleViewer:
     def __init__(self, root, current_location, airline_id):
@@ -22,6 +25,7 @@ class ScheduleViewer:
         self.fleet = []  # (id, registration, airframeIcao, logHours, logLocation)
         self.selected_aircraft_id = None
         self.selected_aircraft_location = None
+        self.api_key = self.config_manager.get_aeroapi_credentials('api_key', '')
 
         # Top-level frames
         control_frame = ttk.Frame(self.root, padding=10)
@@ -32,6 +36,9 @@ class ScheduleViewer:
 
         load_json_button = ttk.Button(control_frame, text="Load JSON Routes", command=self.load_json_routes, bootstyle="info")
         load_json_button.pack(side=tk.LEFT, padx=5)
+
+        aeroapi_button = ttk.Button(control_frame, text="Load AeroAPI Schedules", command=self.load_aeroapi_schedules, bootstyle="info")
+        aeroapi_button.pack(side=tk.LEFT, padx=5)
 
         # Aircraft selection frame
         aircraft_frame = ttk.Frame(self.root, padding=10)
@@ -49,21 +56,25 @@ class ScheduleViewer:
         frame = ttk.Frame(self.root, padding=20)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        # Add a hidden Callsign column to store callsign along with flight
-        self.tree = ttk.Treeview(frame, columns=("Flight", "Callsign", "Departure", "Arrival", "Fleet"), show="headings")
+        # Update Treeview columns to include Route, Altitude, Distance
+        self.tree = ttk.Treeview(frame, columns=("Flight", "Callsign", "Departure", "Arrival", "Route", "Altitude", "Distance", "Fleet"), show="headings")
         self.tree.heading("Flight", text="Flight")
         self.tree.heading("Callsign", text="Callsign")
         self.tree.heading("Departure", text="Departure")
         self.tree.heading("Arrival", text="Arrival")
+        self.tree.heading("Route", text="Route")
+        self.tree.heading("Altitude", text="Altitude (FL)")
+        self.tree.heading("Distance", text="Distance (nm)")
         self.tree.heading("Fleet", text="Fleet")
-        self.tree.column("Flight", width=100, anchor=tk.W)
-        self.tree.column("Callsign", width=100, anchor=tk.W)
+
+        self.tree.column("Flight", width=100, anchor=tk.CENTER)
+        self.tree.column("Callsign", width=100, anchor=tk.CENTER)
         self.tree.column("Departure", width=80, anchor=tk.CENTER)
         self.tree.column("Arrival", width=80, anchor=tk.CENTER)
-        self.tree.column("Fleet", width=100, anchor=tk.W)
-        # Hide the Callsign column from user view if desired
-        self.tree.column("Callsign", width=0, stretch=False)
-        self.tree["displaycolumns"] = ("Flight", "Departure", "Arrival", "Fleet")
+        self.tree.column("Route", width=200, anchor=tk.W)
+        self.tree.column("Altitude", width=100, anchor=tk.CENTER)
+        self.tree.column("Distance", width=100, anchor=tk.CENTER)
+        self.tree.column("Fleet", width=100, anchor=tk.CENTER)
 
         self.tree.pack(fill=tk.BOTH, expand=True)
 
@@ -101,9 +112,10 @@ class ScheduleViewer:
             return
 
         for row in schedules:
-            # row should be (flightNumber, dep, arr, fleetReg)
+            # row should be (flight_number, callsign, departure, arrival, route, altitude, distance, fleet)
+            
             print("DEBUG: Inserting row into Treeview:", row)
-            self.tree.insert("", tk.END, values=(row[0], "", row[1], row[2], row[3]))
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[2], row[3],'','','', row[4]))
 
     def load_json_routes(self):
         if not self.current_location or not self.airline_id:
@@ -143,7 +155,7 @@ class ScheduleViewer:
                     flight_number = f"{iata_code}{random_num}"
                     flight_callsign = f"{icao_code}{random_num}"
                     fleet = route_obj.get("ac", "N/A")
-                    self.tree.insert("", tk.END, values=(flight_number, flight_callsign, dep, arr, fleet))
+                    self.tree.insert("", tk.END, values=(flight_number, flight_callsign, dep, arr, 'N/A', 'N/A', 'N/A', fleet))
                     found_route = True
 
         if not found_route:
@@ -157,13 +169,14 @@ class ScheduleViewer:
 
         values = self.tree.item(selected[0])["values"]
         # values = (flightNumber, flightCallsign, dep, arr, fleet)
-        flightNumber, flightCallsign, dep, arr, fleet = values
+        flightNumber, flightCallsign, dep, arr, fleet = values[:5]
 
         if not self.aircraft_var.get():
             Messagebox.show_warning("Please select an aircraft from the dropdown.", "No Aircraft Selected")
             return
 
         selected_reg = self.aircraft_var.get().split(" - ")[0]
+        aircraft_type = self.aircraft_var.get().split(" - ")[2]
         aircraft_info = next((a for a in self.fleet if a[1] == selected_reg), None)
         if not aircraft_info:
             Messagebox.show_error("Selected aircraft not found in fleet data.", "Error")
@@ -198,7 +211,7 @@ class ScheduleViewer:
             cursor.execute("""
                 INSERT INTO logbook (flightNumber, flightCallsign, dep, arr, status, scheduledDep, scheduledArr, fleetReg, fleetId)
                 VALUES (?, ?, ?, ?, 'SCHEDULED', ?, ?, ?, ?)
-            """, (flightNumber, flightCallsign, dep, arr, scheduledDep, scheduledArr, aircraft_reg, aircraft_id))
+            """, (flightNumber, flightCallsign, dep, arr, scheduledDep, scheduledArr, aircraft_reg+'/'+aircraft_type, aircraft_id))
 
             conn.commit()
             conn.close()
@@ -214,7 +227,8 @@ class ScheduleViewer:
         try:
             self.fleet = fetch_fleet_data(self.airline_id)
             if self.fleet:
-                aircraft_strings = [f"{f[1]} - {f[4]}" for f in self.fleet]
+                # Include aircraft ICAO (assuming it's at index 2)
+                aircraft_strings = [f"{f[1]} - {f[4]} - {f[2]}" for f in self.fleet]
                 self.aircraft_combobox["values"] = aircraft_strings
             else:
                 self.aircraft_combobox["values"] = []
@@ -253,14 +267,96 @@ class ScheduleViewer:
             self.update_location_display()
         except Exception as e:
             print("Error updating location:", e)
-        finally:
-            # Schedule the next update after 60 seconds
-            self.root.after(60000, self.update_location)
 
     def update_location_display(self):
         # Update the UI with the new location
         location_label = ttk.Label(self.root, text=f"Location: {self.current_location}")
         location_label.pack()
+
+    def fetch_aeroapi_schedules(self):
+        """Fetch flight schedules from FlightAware AeroAPI."""
+        start_time = (datetime.utcnow() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        url = f"https://aeroapi.flightaware.com/aeroapi/airports/{self.current_location}/flights/departures?airline={self.airline_icao}&start={start_time}&end={end_time}"
+        headers = {
+            "x-apikey": self.api_key,
+            "Accept": "application/json"
+        }
+        retries = 3
+        for attempt in range(retries):
+            try:
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json()
+                print("DEBUG: AeroAPI response:", data)
+                return data.get('departures', [])
+            except requests.RequestException as e:
+                print(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < retries - 1:
+                    time.sleep(2)  # Wait before retrying
+                else:
+                    Messagebox.show_error(f"Failed to fetch schedules after {retries} attempts: {e}", "API Error")
+                    return []
+
+    def filter_schedules_by_airline(self, schedules, icao_code):
+        """Filter schedules based on the airline's ICAO code."""
+        filtered = [flight for flight in schedules if flight.get('operator_icao') == icao_code]
+        print(f"DEBUG: Filtered {len(filtered)} schedules for airline ICAO {icao_code}")
+        return filtered
+
+    def load_aeroapi_schedules(self):
+        """Load schedules from AeroAPI and populate the Treeview."""
+        if not self.current_location or not self.airline_id:
+            Messagebox.show_error("Current location or airline ID is not set.", "Error")
+            return
+
+        try:
+            airlines_data = load_airlines_json()
+        except Exception as e:
+            Messagebox.show_error(f"Failed to load airline data from JSON: {e}", "Error")
+            return
+
+        target_airline = self.find_target_airline(airlines_data)
+        if target_airline is None:
+            Messagebox.show_warning("No matching airline found in JSON for the selected airline ID.", "No Data")
+            return
+
+        self.clear_tree()
+
+        if "Routes" not in target_airline:
+            Messagebox.show_warning("No routes found for this airline in JSON.", "No Data")
+            return
+
+        iata_code = target_airline.get("iata", "XX")
+        icao_code = target_airline.get("icao", "ZZZ")  # fallback if not found
+        print("DEBUG: Selected airline ICAO:", icao_code)
+
+        schedules = self.fetch_aeroapi_schedules()
+        print(f"DEBUG: Fetched {len(schedules)} schedules from API")
+
+        if not schedules:
+            Messagebox.show_warning("No schedules fetched from API.", "No Data")
+            return
+
+        filtered_schedules = self.filter_schedules_by_airline(schedules, icao_code)
+        print("DEBUG: Number of filtered schedules:", len(filtered_schedules))
+
+        if not filtered_schedules:
+            Messagebox.show_warning("No schedules match the selected airline.", "No Data")
+            return
+
+        self.clear_tree()
+        for flight in filtered_schedules:
+            flight_number = flight.get('ident_iata', 'N/A')
+            callsign = flight.get('ident_icao', 'N/A')
+            departure = flight.get('origin', {}).get('code', 'N/A')
+            arrival = flight.get('destination', {}).get('code', 'N/A')
+            route = flight.get('route', 'N/A')
+            altitude = flight.get('filed_altitude', 'N/A')
+            distance = flight.get('route_distance', 'N/A')
+            fleet = flight.get('aircraft_type', 'N/A')
+
+            self.tree.insert("", tk.END, values=(flight_number, callsign, departure, arrival, route, altitude, distance, fleet))
 
 
 if __name__ == "__main__":

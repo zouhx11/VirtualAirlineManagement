@@ -34,3 +34,7 @@ class ConfigManager:
     def save(self):
         with open(self.config_file, 'w') as f:
             self.config.write(f)
+
+    def get_aeroapi_credentials(self, key: str, default=None):
+        return self.config["AeroAPI"].get(key, default)
+        

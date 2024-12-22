@@ -401,7 +401,7 @@ def fetch_schedules_by_location_and_airline(current_location: str, airline_id: s
     try:
         cursor = conn.cursor()
         query = """
-            SELECT flightNumber, dep, arr, fleetReg
+            SELECT flightNumber, flightCallsign, dep, arr, fleetReg
             FROM logbook
             WHERE status = 'SCHEDULED'
             AND dep = ?
@@ -410,6 +410,7 @@ def fetch_schedules_by_location_and_airline(current_location: str, airline_id: s
                 FROM fleet
                 WHERE airlineCode = ?
             )
+            and deleted = 0
         """
         cursor.execute(query, (current_location, airline_id))
         rows = cursor.fetchall()

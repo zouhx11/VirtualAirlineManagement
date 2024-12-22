@@ -173,8 +173,12 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# .gitignore
+config.ini
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 stkp_va
 __init__.py
 VirtualAirlineManagement.code-workspace
+config.ini

@@ -19,6 +19,42 @@ def get_database_path():
     config.read("config.ini")
     return config.get("DATABASES", "userdata")
 
+def setup_achievements_table(cursor):
+    logging.info("Ensuring 'achievements' table exists...")
+    cursor.execute(
+        '''CREATE TABLE IF NOT EXISTS achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pilot_id INTEGER,
+        airlineId INTEGER, 
+        achievement TEXT NOT NULL, 
+        date_earned TEXT NOT NULL)
+        '''
+    )
+    logging.info("'achievements' table verified or created successfully.")
+
+
+def setup_fleet_table(cursor):
+    logging.info("Ensuring 'fleet' table exists...")
+    cursor.execute (
+        '''CREATE TABLE IF NOT EXISTS fleet (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        airframeIcao TEXT,
+        airlineCode	TEXT,
+        registration TEXT,
+        simbriefProfileId	TEXT,
+        simbriefAcData	NUMERIC,
+        logHours	REAL DEFAULT 0,
+        logLocation	TEXT,
+        logDistance	INTEGER DEFAULT 0,
+        logFuelBurned	REAL DEFAULT 0,
+        logFlightCount	INTEGER DEFAULT 0,
+        associatedLivery	TEXT,
+        image	TEXT,
+        notes	TEXT,
+        deleted	INTEGER DEFAULT 0, 
+        lastupdated NUMBER DEFAULT 0)
+    ''')
+
 def ensure_table_exists(cursor):
     logging.info("Ensuring 'pilots' table exists...")
     cursor.execute(
