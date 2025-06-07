@@ -1,10 +1,124 @@
-# main.py - Improved version with better error handling
+# scripts/fix_database_and_dialogs.py
+
+import sqlite3
+import os
+from datetime import datetime
+
+def check_database_structure():
+    """Check and fix the database structure"""
+    print("🔍 Checking database structure...")
+    
+    db_path = "userdata.db"
+    
+    if not os.path.exists(db_path):
+        print(f"❌ Database {db_path} does not exist")
+        return False
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Check if pilots table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='pilots'")
+        pilots_table_exists = cursor.fetchone() is not None
+        
+        if pilots_table_exists:
+            # Check pilots table structure
+            cursor.execute("PRAGMA table_info(pilots)")
+            columns = cursor.fetchall()
+            column_names = [col[1] for col in columns]
+            
+            print(f"✅ Pilots table exists with columns: {column_names}")
+            
+            # Check if airline_id column exists
+            if 'airline_id' not in column_names:
+                print("⚠️ Adding missing airline_id column to pilots table...")
+                cursor.execute("ALTER TABLE pilots ADD COLUMN airline_id INTEGER DEFAULT 1")
+                conn.commit()
+                print("✅ Added airline_id column")
+            
+            # Check current pilots
+            cursor.execute("SELECT * FROM pilots")
+            pilots = cursor.fetchall()
+            print(f"📊 Current pilots in database: {len(pilots)}")
+            
+            for pilot in pilots:
+                print(f"   Pilot: {pilot}")
+            
+        else:
+            print("❌ Pilots table does not exist")
+            return False
+        
+        conn.close()
+        return True
+        
+    except Exception as e:
+        print(f"❌ Database error: {e}")
+        return False
+
+def create_sample_pilot():
+    """Create a sample pilot if none exists"""
+    print("👨‍✈️ Creating sample pilot...")
+    
+    db_path = "userdata.db"
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Check if any pilots exist
+        cursor.execute("SELECT COUNT(*) FROM pilots")
+        pilot_count = cursor.fetchone()[0]
+        
+        if pilot_count == 0:
+            # Create a sample pilot
+            cursor.execute("""
+                INSERT INTO pilots (name, license_number, rating, hours, hire_date, status, airline_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "John Smith",
+                "ATP001", 
+                "ATP",
+                5500,
+                datetime.now().isoformat(),
+                "active",
+                1  # Default airline ID
+            ))
+            
+            conn.commit()
+            print("✅ Created sample pilot: John Smith")
+            
+        else:
+            # Update existing pilots to have airline_id if missing
+            cursor.execute("UPDATE pilots SET airline_id = 1 WHERE airline_id IS NULL")
+            updated = cursor.rowcount
+            if updated > 0:
+                conn.commit()
+                print(f"✅ Updated {updated} pilots with airline_id")
+            else:
+                print("✅ All pilots already have airline_id")
+        
+        conn.close()
+        
+    except Exception as e:
+        print(f"❌ Error creating/updating pilots: {e}")
+
+def create_better_main_py():
+    """Create an improved main.py with better error handling and larger dialogs"""
+    print("📝 Creating improved main.py with better error dialogs...")
+    
+    # Backup original main.py
+    if os.path.exists('main.py'):
+        import shutil
+        shutil.copy2('main.py', 'main.py.backup')
+        print("💾 Backed up original main.py")
+    
+    main_py_content = '''# main.py - Improved version with better error handling
 
 import logging
 import sqlite3
 from tkinter import simpledialog, BOTH
 from typing import Optional
-import os 
 
 # Third-party imports
 import ttkbootstrap as ttk
@@ -472,3 +586,35 @@ if __name__ == "__main__":
     root = ttk.Window(themename="flatly")
     app = MainApp(root)
     root.mainloop()
+'''
+    
+    with open('main.py', 'w', encoding='utf-8') as f:
+        f.write(main_py_content)
+    
+    print("✅ Created improved main.py with better error dialogs")
+
+def main():
+    """Fix database structure and error dialogs"""
+    print("🔧 FIXING DATABASE STRUCTURE AND ERROR DIALOGS")
+    print("=" * 60)
+    
+    # Check and fix database
+    if check_database_structure():
+        create_sample_pilot()
+    else:
+        print("❌ Database issues found. Run: python scripts/initial_setup.py")
+        return
+    
+    # Create improved main.py
+    create_better_main_py()
+    
+    print("\n🎉 FIXES COMPLETED!")
+    print("\n📋 Changes made:")
+    print("1. ✅ Fixed database structure (added airline_id column)")
+    print("2. ✅ Created sample pilot if needed")
+    print("3. ✅ Improved error dialogs (larger, more readable)")
+    print("4. ✅ Better error handling throughout the app")
+    print("\n🚀 Try running: python main.py")
+
+if __name__ == "__main__":
+    main()

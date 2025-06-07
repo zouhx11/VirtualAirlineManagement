@@ -1,8 +1,10 @@
-# core/utils.py - Complete version with all required functions
+# core/utils.py - Fixed version
 
 import json
 import sqlite3
 import os
+import tkinter as tk
+from tkinter import ttk
 import threading
 import time
 from functools import wraps
@@ -59,15 +61,63 @@ def load_airlines_json():
         except Exception as e:
             print(f"❌ Unexpected error loading {db_file}: {e}")
     
+    # If both files fail, check for alternative file names
+    alternative_files = ['airlines.json', 'data/airline_data.json', 'data/airlines.json']
+    for alt_file in alternative_files:
+        if os.path.exists(alt_file):
+            try:
+                with open(alt_file, 'r', encoding='utf-8') as f:
+                    airlines = json.load(f)
+                    print(f"✅ Loaded {len(airlines)} airlines from {alt_file}")
+                    return airlines
+            except Exception as e:
+                print(f"❌ Error loading {alt_file}: {e}")
+                continue
+    
     # Return default airlines if no data source found
-    print("⚠️ No airline data found, creating default airlines")
+    print("⚠️ No airline data found in any format, creating default airlines")
     
     default_airlines = [
-        {"id": 1, "name": "SkyLine Airways", "icao": "SKY", "iata": "SL", "country": "United States", "hub": "KJFK"},
-        {"id": 2, "name": "Pacific Airlines", "icao": "PAC", "iata": "PA", "country": "United States", "hub": "KLAX"},
-        {"id": 3, "name": "Atlantic Express", "icao": "ATL", "iata": "AE", "country": "United States", "hub": "KATL"},
-        {"id": 4, "name": "Continental Airways", "icao": "CON", "iata": "CO", "country": "United States", "hub": "KORD"},
-        {"id": 5, "name": "Your Custom Airline", "icao": "YCA", "iata": "YC", "country": "United States", "hub": "KJFK"}
+        {
+            "id": 1,
+            "name": "SkyLine Airways",
+            "icao": "SKY",
+            "iata": "SL",
+            "country": "United States",
+            "hub": "KJFK"
+        },
+        {
+            "id": 2,
+            "name": "Pacific Airlines", 
+            "icao": "PAC",
+            "iata": "PA",
+            "country": "United States",
+            "hub": "KLAX"
+        },
+        {
+            "id": 3,
+            "name": "Atlantic Express",
+            "icao": "ATL", 
+            "iata": "AE",
+            "country": "United States",
+            "hub": "KATL"
+        },
+        {
+            "id": 4,
+            "name": "Continental Airways",
+            "icao": "CON",
+            "iata": "CO", 
+            "country": "United States",
+            "hub": "KORD"
+        },
+        {
+            "id": 5,
+            "name": "Your Custom Airline",
+            "icao": "YCA",
+            "iata": "YC",
+            "country": "United States", 
+            "hub": "KJFK"
+        }
     ]
     
     # Save default airlines to JSON for future use
@@ -83,7 +133,6 @@ def load_airlines_json():
 def create_button(parent, text, style, command, icon=None):
     """Create a button with optional icon"""
     try:
-        import ttkbootstrap as ttk
         if icon and icon is not None:
             btn = ttk.Button(parent, text=text, bootstyle=style, command=command, image=icon, compound='top')
         else:
@@ -92,7 +141,6 @@ def create_button(parent, text, style, command, icon=None):
     except Exception as e:
         print(f"⚠️ Error creating button '{text}': {e}")
         # Fallback button without icon
-        import ttkbootstrap as ttk
         return ttk.Button(parent, text=text, bootstyle=style, command=command)
 
 def debounce(wait_time):
@@ -117,22 +165,99 @@ def debounce(wait_time):
         return wrapper
     return decorator
 
-# Required functions for database_utils.py compatibility
+def safe_file_operation(operation, filename, *args, **kwargs):
+    """Safely perform file operations with error handling"""
+    try:
+        return operation(filename, *args, **kwargs)
+    except FileNotFoundError:
+        print(f"❌ File not found: {filename}")
+        return None
+    except PermissionError:
+        print(f"❌ Permission denied: {filename}")
+        return None
+    except Exception as e:
+        print(f"❌ Error with file {filename}: {e}")
+        return None
+
+def check_file_encoding(filename):
+    """Check and fix file encoding issues"""
+    if not os.path.exists(filename):
+        return False
+    
+    try:
+        # Try to read with UTF-8
+        with open(filename, 'r', encoding='utf-8') as f:
+            f.read()
+        return True
+    except UnicodeDecodeError:
+        print(f"⚠️ Encoding issue with {filename}")
+        try:
+            # Try with different encodings
+            for encoding in ['latin-1', 'cp1252', 'iso-8859-1']:
+                with open(filename, 'r', encoding=encoding) as f:
+                    content = f.read()
+                # Rewrite with UTF-8
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"✅ Fixed encoding for {filename}")
+                return True
+        except Exception as e:
+            print(f"❌ Could not fix encoding for {filename}: {e}")
+    except Exception as e:
+        print(f"❌ Error checking {filename}: {e}")
+    
+    return False
+
+# Debug utilities
+def debug_file_contents(filename, max_lines=10):
+    """Debug function to safely check file contents"""
+    if not os.path.exists(filename):
+        print(f"❌ Debug: File {filename} does not exist")
+        return
+    
+    try:
+        print(f"🔍 Debug: Checking {filename}")
+        print(f"   File size: {os.path.getsize(filename)} bytes")
+        
+        # Check if it's a binary file (SQLite)
+        with open(filename, 'rb') as f:
+            first_bytes = f.read(16)
+            if first_bytes.startswith(b'SQLite format 3'):
+                print(f"   Type: SQLite database")
+                return
+        
+        # Try to read as text
+        with open(filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            print(f"   Type: Text file ({len(lines)} lines)")
+            for i, line in enumerate(lines[:max_lines]):
+                print(f"   Line {i+1}: {line.strip()[:100]}...")
+                
+    except Exception as e:
+        print(f"   Error reading: {e}")
+
+# Additional utility functions that may be needed by other modules
 def convert_to_int(value, default=0):
     """Convert a value to integer with a default fallback"""
     if value is None:
         return default
     
     try:
+        # Handle string representations
         if isinstance(value, str):
+            # Remove any whitespace
             value = value.strip()
+            # Handle empty strings
             if not value:
                 return default
+            # Try to convert
             return int(float(value))  # float first to handle "123.0" strings
         
+        # Handle numeric types
         if isinstance(value, (int, float)):
             return int(value)
         
+        # Fallback for other types
         return int(value)
         
     except (ValueError, TypeError, OverflowError):
@@ -145,24 +270,23 @@ def convert_to_float(value, default=0.0):
         return default
     
     try:
+        # Handle string representations
         if isinstance(value, str):
             value = value.strip()
             if not value:
                 return default
             return float(value)
         
+        # Handle numeric types
         if isinstance(value, (int, float)):
             return float(value)
         
+        # Fallback for other types
         return float(value)
         
     except (ValueError, TypeError, OverflowError):
         print(f"⚠️ Could not convert '{value}' to float, using default {default}")
         return default
-
-def convert_to_integer(value, default=0):
-    """Alias for convert_to_int for backward compatibility"""
-    return convert_to_int(value, default)
 
 def safe_get_config_value(config, section, key, default=None, value_type=str):
     """Safely get a configuration value with type conversion"""
@@ -238,3 +362,26 @@ def format_time_duration(hours):
         return f"{hours_part:02d}:{minutes_part:02d}"
     except (ValueError, TypeError):
         return "00:00"
+
+# Backward compatibility aliases
+def convert_to_integer(value, default=0):
+    """Alias for convert_to_int for backward compatibility"""
+    return convert_to_int(value, default)
+
+if __name__ == "__main__":
+    # Test the functions
+    print("🧪 Testing airline data loading...")
+    airlines = load_airlines_json()
+    print(f"Result: {len(airlines)} airlines loaded")
+    
+    # Test utility functions
+    print("\n🧪 Testing utility functions...")
+    print(f"convert_to_int('123'): {convert_to_int('123')}")
+    print(f"convert_to_int('abc', 42): {convert_to_int('abc', 42)}")
+    print(f"format_currency(1250000): {format_currency(1250000)}")
+    print(f"validate_airport_code('KJFK'): {validate_airport_code('KJFK')}")
+    
+    # Debug existing files
+    for filename in ['airline_data.json', 'airline_data.db']:
+        if os.path.exists(filename):
+            debug_file_contents(filename)

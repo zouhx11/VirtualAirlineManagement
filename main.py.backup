@@ -1,10 +1,9 @@
-# main.py - Improved version with better error handling
+# main.py - Updated with Aircraft Marketplace Integration
 
 import logging
 import sqlite3
 from tkinter import simpledialog, BOTH
 from typing import Optional
-import os 
 
 # Third-party imports
 import ttkbootstrap as ttk
@@ -30,54 +29,6 @@ def clear_window(root):
     """Clear all widgets in the main window."""
     for widget in root.winfo_children():
         widget.destroy()
-
-def show_large_error(title, message):
-    """Show a larger, more readable error dialog"""
-    error_window = ttk.Toplevel()
-    error_window.title(title)
-    error_window.geometry("600x400")
-    error_window.resizable(True, True)
-    
-    # Make it modal
-    error_window.transient()
-    error_window.grab_set()
-    
-    # Center the window
-    error_window.update_idletasks()
-    x = (error_window.winfo_screenwidth() // 2) - (600 // 2)
-    y = (error_window.winfo_screenheight() // 2) - (400 // 2)
-    error_window.geometry(f"600x400+{x}+{y}")
-    
-    # Create main frame
-    main_frame = ttk.Frame(error_window, padding=20)
-    main_frame.pack(fill=BOTH, expand=True)
-    
-    # Title
-    title_label = ttk.Label(main_frame, text=title, font=("Arial", 16, "bold"))
-    title_label.pack(pady=(0, 20))
-    
-    # Error message in a scrollable text widget
-    text_frame = ttk.Frame(main_frame)
-    text_frame.pack(fill=BOTH, expand=True, pady=(0, 20))
-    
-    text_widget = ttk.Text(text_frame, wrap='word', font=("Arial", 11))
-    scrollbar = ttk.Scrollbar(text_frame, orient='vertical', command=text_widget.yview)
-    text_widget.configure(yscrollcommand=scrollbar.set)
-    
-    text_widget.pack(side='left', fill=BOTH, expand=True)
-    scrollbar.pack(side='right', fill='y')
-    
-    # Insert the error message
-    text_widget.insert('1.0', message)
-    text_widget.configure(state='disabled')
-    
-    # Close button
-    close_btn = ttk.Button(main_frame, text="Close", bootstyle=PRIMARY, 
-                          command=error_window.destroy)
-    close_btn.pack()
-    
-    # Focus on the window
-    error_window.focus_set()
 
 class MainApp:
     def __init__(self, root):
@@ -110,82 +61,29 @@ class MainApp:
 
     def ensure_pilot_exists(self):
         """Ensures that at least one pilot exists in the database."""
+        selected_airline = self.selected_airline.get()
+        if not selected_airline:
+            Messagebox.show_warning("Warning", "No airline selected. Please select an airline first.")
+            return  # Optionally, you might want to quit the application here
+
         try:
-            # First, try to create/update database structure
-            self.ensure_database_structure()
-            
-            selected_airline = self.selected_airline.get()
-            
-            # If no airline selected, skip pilot check for now
-            if not selected_airline or not selected_airline.strip():
-                print("ℹ️ No airline selected yet, skipping pilot check")
-                return
-            
-            try:
-                airline_id, _ = self.parse_airline_selection(selected_airline)
-                pilots = fetch_pilot_data(airline_id)
-                
-                if not pilots:
-                    print("ℹ️ No pilots found, creating sample pilot")
+            airline_id, _ = self.parse_airline_selection(selected_airline)
+            if not fetch_pilot_data(airline_id):
+                Messagebox.show_info("Pilot Required", "No pilots found. Let's create one!")
+                pilot_name = simpledialog.askstring("Create Pilot", "Enter the pilot's name:")
+                if pilot_name:
                     try:
-                        add_pilot("Sample Pilot", home_hub="KJFK", current_location="KJFK")
-                        Messagebox.show_info("Pilot Created", "Created a sample pilot to get you started!")
+                        add_pilot(pilot_name, home_hub="Unknown", current_location="Unknown")
+                        Messagebox.show_info("Success", f"Pilot '{pilot_name}' created successfully!")
                     except Exception as e:
-                        print(f"⚠️ Could not create pilot: {e}")
-                        
-            except ValueError as e:
-                print(f"⚠️ Airline selection issue: {e}")
-                # Clear invalid airline selection
-                self.selected_airline.set("")
-                self.config_manager.set_preference('selected_airline', '')
-                
-        except Exception as e:
-            error_msg = f"""Database initialization error: {e}
-
-This might be caused by:
-1. Database file corruption
-2. Missing database tables
-3. Permission issues
-
-Try these solutions:
-1. Delete userdata.db and run scripts/initial_setup.py
-2. Check file permissions in the application directory
-3. Restart the application
-
-Technical details: {str(e)}"""
-            
-            show_large_error("Database Error", error_msg)
-
-    def ensure_database_structure(self):
-        """Ensure the database has the correct structure"""
-        try:
-            user_db = self.config_manager.get_database_path('userdata')
-            
-            if not os.path.exists(user_db):
-                print(f"⚠️ Database {user_db} does not exist, run initial_setup.py")
-                return
-                
-            with sqlite3.connect(user_db) as conn:
-                cursor = conn.cursor()
-                
-                # Check if pilots table exists
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='pilots'")
-                if not cursor.fetchone():
-                    print("⚠️ Pilots table missing, run initial_setup.py")
-                    return
-                
-                # Check if airline_id column exists
-                cursor.execute("PRAGMA table_info(pilots)")
-                columns = [col[1] for col in cursor.fetchall()]
-                
-                if 'airline_id' not in columns:
-                    print("🔧 Adding airline_id column to pilots table...")
-                    cursor.execute("ALTER TABLE pilots ADD COLUMN airline_id INTEGER DEFAULT 1")
-                    conn.commit()
-                    
-        except Exception as e:
-            print(f"❌ Database structure error: {e}")
-            raise
+                        Messagebox.show_error("Error", f"Failed to create pilot: {e}")
+                        self.root.quit()
+                else:
+                    Messagebox.show_error("Error", "No pilot created. The application will close.")
+                    self.root.quit()
+        except ValueError as e:
+            Messagebox.show_error("Error", f"Invalid airline selection: {e}")
+            self.root.quit()
 
     def load_preferences(self):
         """Load previously saved preferences from the config file."""
@@ -202,7 +100,7 @@ Technical details: {str(e)}"""
                 img = Image.open(file_path).resize((32, 32), Image.Resampling.LANCZOS)
                 return ImageTk.PhotoImage(img)
             except Exception as e:
-                print(f"⚠️ Error loading icon {file_path}: {e}")
+                print(f"Error loading icon {file_path}: {e}")
                 return None
 
         icons_map = {
@@ -211,8 +109,8 @@ Technical details: {str(e)}"""
             "Fleet Management": "icons/fleet.png",
             "Pilot Logbook": "icons/logbook.png",
             "Pilot Dashboard": "icons/dashboard.png",
-            "Aircraft Market": "icons/aircraft.png",      # NEW
-            "My Fleet": "icons/my_fleet.png",             # NEW
+            "Aircraft Market": "icons/aircraft.png",      # NEW: Aircraft marketplace icon
+            "My Fleet": "icons/my_fleet.png",             # NEW: My fleet icon
             "Settings": "icons/settings.png",
             "Exit": "icons/exit.png"
         }
@@ -228,8 +126,7 @@ Technical details: {str(e)}"""
         # Airline Selection Dropdown
         airlines = load_airlines_json()
         if not airlines:
-            show_large_error("Airline Data Error", 
-                           "No airline data available. Please run scripts/create_airline_data.py to create sample airline data.")
+            Messagebox.show_warning("Warning", "No airline data available. Please check the JSON file.")
             return
 
         ttk.Label(self.root, text="Select Airline:", font=("Arial", 14)).pack(pady=10)
@@ -250,35 +147,37 @@ Technical details: {str(e)}"""
         self.setup_buttons(grid_frame)
 
     def setup_buttons(self, grid_frame):
-        # Updated with new aircraft marketplace buttons
+        # UPDATED: Added new aircraft marketplace buttons
         buttons = [
             ("Pilot Management", SUCCESS, self.open_pilot_management),
             ("Flight Schedules", PRIMARY, self.open_flight_schedule),
             ("Fleet Management", INFO, self.open_fleet_management),
             ("Pilot Logbook", WARNING, self.open_pilot_logbook),
             ("Pilot Dashboard", SECONDARY, self.open_pilot_dashboard),
-            ("Aircraft Market", INFO, self.open_aircraft_marketplace),     # NEW
-            ("My Fleet", PRIMARY, self.open_my_fleet),                     # NEW
+            ("Aircraft Market", INFO, self.open_aircraft_marketplace),     # NEW: Aircraft marketplace
+            ("My Fleet", PRIMARY, self.open_my_fleet),                     # NEW: My fleet management
             ("Settings", LIGHT, self.open_settings_window),
             ("Exit", DANGER, self.root.quit)
         ]
 
-        # 3x3 grid layout
+        # UPDATED: Adjust grid layout for 9 buttons (3x3)
         for idx, (text, style, command) in enumerate(buttons):
             btn = create_button(grid_frame, text, style, command, self.icons.get(text))
             btn.grid(row=idx // 3, column=idx % 3, padx=10, pady=10, sticky="NSEW")
 
+        # UPDATED: Configure grid for 3 columns
         for i in range((len(buttons) + 2) // 3):
             grid_frame.rowconfigure(i, weight=1)
         for j in range(3):
             grid_frame.columnconfigure(j, weight=1)
 
-    @debounce(300)
+    @debounce(300)  # 300 milliseconds debounce delay
     def filter_dropdown(self, _event, combobox, all_values):
         """Filter the dropdown dynamically based on user input."""
         value = combobox.get().lower()
         filtered = [val for val in all_values if value in val.lower()]
         combobox['values'] = filtered
+        # Keep focus and cursor at the end
         combobox.focus_set()
         combobox.icursor(len(value))
 
@@ -304,87 +203,40 @@ Technical details: {str(e)}"""
             airline_id, airline_name = self.parse_airline_selection(selected)
             user_db = self.config_manager.get_database_path('userdata')
 
-            # Ensure database structure before updating
-            self.ensure_database_structure()
-
             # Update the pilot's associated airline in the database
             with sqlite3.connect(user_db) as conn:
                 cursor = conn.cursor()
-                
-                # Check if any pilots exist
-                cursor.execute("SELECT COUNT(*) FROM pilots")
-                pilot_count = cursor.fetchone()[0]
-                
-                if pilot_count == 0:
-                    # Create a pilot first
-                    cursor.execute("""
-                        INSERT INTO pilots (name, license_number, rating, hours, hire_date, status, airline_id)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        "Default Pilot",
-                        "ATP001",
-                        "ATP", 
-                        1000,
-                        "2024-01-01",
-                        "active",
-                        airline_id
-                    ))
-                else:
-                    # Update existing pilots
-                    cursor.execute("UPDATE pilots SET airline_id = ? WHERE id = 1", (airline_id,))
-                
+                cursor.execute(
+                    "UPDATE pilots SET airline_id = ? WHERE id = 1",
+                    (airline_id,)
+                )
                 conn.commit()
 
             # Update config and notify the user
             self.config_manager.set_preference('selected_airline', selected)
-            Messagebox.show_info("Success", f"Airline '{airline_name}' selected successfully!")
-            
+            Messagebox.show_info("Airline Selected", f"Airline '{airline_name}' (ID: {airline_id}) has been associated with the pilot.")
         except sqlite3.Error as e:
-            error_msg = f"""Failed to associate airline with pilot: {e}
-
-Database path: {self.config_manager.get_database_path('userdata')}
-
-Possible solutions:
-1. Run scripts/initial_setup.py to recreate the database
-2. Check if the userdata.db file exists and is readable
-3. Ensure the pilots table has the correct structure
-
-Technical details: {str(e)}"""
-            
-            show_large_error("Database Error", error_msg)
-            
+            Messagebox.show_error("Error", f"Failed to associate airline with pilot: {e}")
         except Exception as e:
-            error_msg = f"""Unexpected error: {e}
+            Messagebox.show_error("Error", f"Unexpected error: {e}")
 
-Selected airline: {selected}
-
-This might be caused by:
-1. Invalid airline selection format
-2. Configuration issues
-3. Missing files
-
-Technical details: {str(e)}"""
-            
-            show_large_error("Unexpected Error", error_msg)
-
-    # Rest of the methods remain the same...
     def open_pilot_management(self):
         try:
             airline_id, airline_name = self.parse_airline_selection(self.selected_airline.get())
             PilotManagementGUI(ttk.Toplevel(self.root), airline_id, airline_name)
         except Exception as e:
-            show_large_error("Error", f"Failed to open Pilot Management: {e}")
+            Messagebox.show_error("Error", f"Failed to open Pilot Management: {e}")
 
     def open_flight_schedule(self):
         try:
             airline_id, _ = self.parse_airline_selection(self.selected_airline.get())
             current_location = self.config_manager.get_preference('current_location', '')
             if not current_location or not airline_id:
-                show_large_error("Error", "Current location or selected airline is not set.")
+                Messagebox.show_error("Error", "Current location or selected airline is not set.")
                 return
             ScheduleViewer(ttk.Toplevel(self.root), current_location, airline_id)
         except Exception as e:
-            show_large_error("Error", f"Failed to open Flight Schedules: {e}")
+            Messagebox.show_error("Error", f"Failed to open Flight Schedules: {e}")
 
     def open_fleet_management(self):
         try:
@@ -392,13 +244,13 @@ Technical details: {str(e)}"""
             current_location = self.selected_location.get()
             FleetManagement(ttk.Toplevel(self.root), airline_id, current_location)
         except Exception as e:
-            show_large_error("Error", f"Failed to open Fleet Management: {e}")
+            Messagebox.show_error("Error", f"Failed to open Fleet Management: {e}")
 
     def open_pilot_logbook(self):
         try:
-            PilotLogbook(ttk.Toplevel(self.root))
+            PilotLogbook(ttk.Toplevel(self.root))  # Removed airline_id
         except Exception as e:
-            show_large_error("Error", f"Failed to open Pilot Logbook: {e}")
+            Messagebox.show_error("Error", f"Failed to open Pilot Logbook: {e}")
 
     def open_pilot_dashboard(self):
         try:
@@ -406,23 +258,28 @@ Technical details: {str(e)}"""
             dashboard_window = ttk.Toplevel(self.root)
             create_dashboard(dashboard_window, dashboard_window.destroy, airline_id, airline_name)
         except Exception as e:
-            show_large_error("Error", f"Failed to open Pilot Dashboard: {e}")
+            Messagebox.show_error("Error", f"Failed to open Pilot Dashboard: {e}")
 
     # NEW: Aircraft Marketplace Methods
     def open_aircraft_marketplace(self):
         """Open the aircraft marketplace window."""
         try:
+            # Get database path from config manager
             db_path = self.config_manager.get_database_path('userdata')
             
+            # Create marketplace window
             marketplace_window = ttk.Toplevel(self.root)
             marketplace_window.title("Aircraft Marketplace")
             marketplace_window.geometry("1200x800")
             
+            # Create a notebook for the marketplace tabs
             notebook = ttk.Notebook(marketplace_window)
             notebook.pack(fill=BOTH, expand=True, padx=10, pady=10)
             
+            # Initialize the marketplace GUI
             marketplace_gui = AircraftMarketplaceGUI(notebook, db_path)
             
+            # Add close button
             close_frame = ttk.Frame(marketplace_window)
             close_frame.pack(fill='x', padx=10, pady=5)
             
@@ -430,25 +287,31 @@ Technical details: {str(e)}"""
                       command=marketplace_window.destroy).pack(side='right')
             
         except Exception as e:
-            show_large_error("Error", f"Failed to open Aircraft Marketplace: {e}")
+            Messagebox.show_error("Error", f"Failed to open Aircraft Marketplace: {e}")
+            print(f"Aircraft Marketplace error details: {e}")
 
     def open_my_fleet(self):
-        """Open the my fleet management window."""
+        """Open the my fleet management window (focused on owned aircraft)."""
         try:
+            # Get database path from config manager
             db_path = self.config_manager.get_database_path('userdata')
             
+            # Create fleet window
             fleet_window = ttk.Toplevel(self.root)
             fleet_window.title("My Fleet")
             fleet_window.geometry("1000x700")
             
+            # Create a notebook for fleet management
             notebook = ttk.Notebook(fleet_window)
             notebook.pack(fill=BOTH, expand=True, padx=10, pady=10)
             
+            # Initialize the marketplace GUI (it includes both market and fleet tabs)
             marketplace_gui = AircraftMarketplaceGUI(notebook, db_path)
             
             # Switch to the fleet tab by default
-            notebook.select(1)
+            notebook.select(1)  # Select the second tab (My Fleet)
             
+            # Add close button
             close_frame = ttk.Frame(fleet_window)
             close_frame.pack(fill='x', padx=10, pady=5)
             
@@ -456,19 +319,20 @@ Technical details: {str(e)}"""
                       command=fleet_window.destroy).pack(side='right')
             
         except Exception as e:
-            show_large_error("Error", f"Failed to open My Fleet: {e}")
+            Messagebox.show_error("Error", f"Failed to open My Fleet: {e}")
+            print(f"My Fleet error details: {e}")
 
     def open_settings_window(self):
         try:
             open_settings(self.root)
         except Exception as e:
-            show_large_error("Error", f"Failed to open Settings: {e}")
+            Messagebox.show_error("Error", f"Failed to open Settings: {e}")
 
     def setup_dropdown(self, combobox, all_values):
         combobox.bind("<KeyRelease>", lambda event: self.filter_dropdown(event, combobox, all_values))
 
 if __name__ == "__main__":
-    # Initialize with a base theme
+    # Initialize with a base theme (overridden by config in __init__)
     root = ttk.Window(themename="flatly")
     app = MainApp(root)
     root.mainloop()

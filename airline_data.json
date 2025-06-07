@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "SkyLine Airways",
+    "icao": "SKY",
+    "iata": "SL",
+    "country": "United States",
+    "hub": "KJFK"
+  },
+  {
+    "id": 2,
+    "name": "Pacific Airlines",
+    "icao": "PAC",
+    "iata": "PA",
+    "country": "United States",
+    "hub": "KLAX"
+  },
+  {
+    "id": 3,
+    "name": "Atlantic Express",
+    "icao": "ATL",
+    "iata": "AE",
+    "country": "United States",
+    "hub": "KATL"
+  },
+  {
+    "id": 4,
+    "name": "Continental Airways",
+    "icao": "CON",
+    "iata": "CO",
+    "country": "United States",
+    "hub": "KORD"
+  },
+  {
+    "id": 5,
+    "name": "Sunrise Airlines",
+    "icao": "SUN",
+    "iata": "SR",
+    "country": "United States",
+    "hub": "KMIA"
+  },
+  {
+    "id": 6,
+    "name": "Mountain Air",
+    "icao": "MTN",
+    "iata": "MA",
+    "country": "United States",
+    "hub": "KDEN"
+  },
+  {
+    "id": 7,
+    "name": "Coastal Airlines",
+    "icao": "CST",
+    "iata": "CS",
+    "country": "United States",
+    "hub": "KSEA"
+  },
+  {
+    "id": 8,
+    "name": "Desert Wings",
+    "icao": "DST",
+    "iata": "DW",
+    "country": "United States",
+    "hub": "KPHX"
+  },
+  {
+    "id": 9,
+    "name": "Northern Express",
+    "icao": "NOR",
+    "iata": "NE",
+    "country": "United States",
+    "hub": "KMSP"
+  },
+  {
+    "id": 10,
+    "name": "Golden State Air",
+    "icao": "GSA",
+    "iata": "GS",
+    "country": "United States",
+    "hub": "KSFO"
+  }
+]

@@ -1,4 +1,32 @@
-# core/utils.py - Complete version with all required functions
+# scripts/complete_fix.py
+
+import os
+import sys
+import shutil
+import json
+
+def backup_existing_files():
+    """Backup existing files before making changes"""
+    print("💾 Creating backups of existing files...")
+    
+    files_to_backup = ['core/utils.py', 'core/database_utils.py', 'config.ini']
+    
+    for file_path in files_to_backup:
+        if os.path.exists(file_path):
+            backup_path = f"{file_path}.backup"
+            try:
+                shutil.copy2(file_path, backup_path)
+                print(f"   ✅ Backed up {file_path} to {backup_path}")
+            except Exception as e:
+                print(f"   ⚠️ Could not backup {file_path}: {e}")
+
+def create_core_utils():
+    """Create the complete core/utils.py file"""
+    print("📝 Creating complete core/utils.py...")
+    
+    os.makedirs('core', exist_ok=True)
+    
+    utils_content = '''# core/utils.py - Complete version with all required functions
 
 import json
 import sqlite3
@@ -238,3 +266,147 @@ def format_time_duration(hours):
         return f"{hours_part:02d}:{minutes_part:02d}"
     except (ValueError, TypeError):
         return "00:00"
+'''
+    
+    with open('core/utils.py', 'w', encoding='utf-8') as f:
+        f.write(utils_content)
+    
+    print("   ✅ Created complete core/utils.py")
+
+def create_airline_data():
+    """Create airline data files"""
+    print("🛩️ Creating airline data...")
+    
+    # Create JSON file
+    airlines_data = [
+        {"id": 1, "name": "SkyLine Airways", "icao": "SKY", "iata": "SL", "country": "United States", "hub": "KJFK"},
+        {"id": 2, "name": "Pacific Airlines", "icao": "PAC", "iata": "PA", "country": "United States", "hub": "KLAX"},
+        {"id": 3, "name": "Atlantic Express", "icao": "ATL", "iata": "AE", "country": "United States", "hub": "KATL"},
+        {"id": 4, "name": "Continental Airways", "icao": "CON", "iata": "CO", "country": "United States", "hub": "KORD"},
+        {"id": 5, "name": "Sunrise Airlines", "icao": "SUN", "iata": "SR", "country": "United States", "hub": "KMIA"},
+        {"id": 6, "name": "Mountain Air", "icao": "MTN", "iata": "MA", "country": "United States", "hub": "KDEN"},
+        {"id": 7, "name": "Coastal Airlines", "icao": "CST", "iata": "CS", "country": "United States", "hub": "KSEA"},
+        {"id": 8, "name": "Desert Wings", "icao": "DST", "iata": "DW", "country": "United States", "hub": "KPHX"},
+        {"id": 9, "name": "Northern Express", "icao": "NOR", "iata": "NE", "country": "United States", "hub": "KMSP"},
+        {"id": 10, "name": "Golden State Air", "icao": "GSA", "iata": "GS", "country": "United States", "hub": "KSFO"}
+    ]
+    
+    # Remove corrupted airline_data.db if it exists
+    if os.path.exists('airline_data.db'):
+        try:
+            with open('airline_data.db', 'rb') as f:
+                header = f.read(16)
+            
+            if not header.startswith(b'SQLite format 3'):
+                print("   🗑️ Removing corrupted airline_data.db...")
+                os.remove('airline_data.db')
+        except Exception as e:
+            print(f"   ⚠️ Could not check airline_data.db: {e}")
+    
+    # Create JSON file
+    try:
+        with open('airline_data.json', 'w', encoding='utf-8') as f:
+            json.dump(airlines_data, f, indent=2, ensure_ascii=False)
+        print("   ✅ Created airline_data.json")
+    except Exception as e:
+        print(f"   ❌ Failed to create airline_data.json: {e}")
+
+def create_config_file():
+    """Create config.ini if it doesn't exist"""
+    if os.path.exists('config.ini'):
+        print("✅ config.ini already exists")
+        return
+    
+    print("📝 Creating config.ini...")
+    
+    config_content = '''[DATABASES]
+userdata = userdata.db
+
+[PREFERENCES]
+theme = flatly
+data_refresh_rate = 30
+selected_airline = 
+homehub = KJFK
+current_location = KJFK
+
+[AeroAPI]
+api_key = YOUR_API_KEY
+api_secret = YOUR_API_SECRET
+
+[AIRCRAFT_MARKETPLACE]
+default_market_size = 50
+auto_refresh_hours = 24
+enable_market_fluctuations = true
+default_financing_rate = 0.05
+
+[SIMULATION]
+time_acceleration = 1.0
+auto_save_interval = 300
+enable_weather_effects = true
+enable_competition = false
+'''
+    
+    try:
+        with open('config.ini', 'w', encoding='utf-8') as f:
+            f.write(config_content)
+        print("   ✅ Created config.ini")
+    except Exception as e:
+        print(f"   ❌ Failed to create config.ini: {e}")
+
+def test_imports():
+    """Test if all imports work correctly"""
+    print("🧪 Testing imports...")
+    
+    try:
+        # Test core utils
+        sys.path.insert(0, '.')
+        from core.utils import convert_to_int, load_airlines_json
+        print("   ✅ core.utils imports working")
+        
+        # Test airline data loading
+        airlines = load_airlines_json()
+        print(f"   ✅ Loaded {len(airlines)} airlines")
+        
+        # Test convert_to_int function
+        result = convert_to_int("123", 0)
+        print(f"   ✅ convert_to_int('123') = {result}")
+        
+        return True
+        
+    except ImportError as e:
+        print(f"   ❌ Import error: {e}")
+        return False
+    except Exception as e:
+        print(f"   ❌ Unexpected error: {e}")
+        return False
+
+def main():
+    """Run complete fix"""
+    print("🔧 VIRTUAL AIRLINE MANAGEMENT - COMPLETE FIX")
+    print("=" * 50)
+    
+    # Step 1: Backup existing files
+    backup_existing_files()
+    
+    # Step 2: Create complete core/utils.py
+    create_core_utils()
+    
+    # Step 3: Create airline data
+    create_airline_data()
+    
+    # Step 4: Create config file
+    create_config_file()
+    
+    # Step 5: Test imports
+    if test_imports():
+        print("\n🎉 ALL FIXES COMPLETED SUCCESSFULLY!")
+        print("\n📋 Next steps:")
+        print("1. Run: python scripts/initial_setup.py")
+        print("2. Run: python main.py")
+        print("\n✅ Your application should now work correctly!")
+    else:
+        print("\n❌ Some issues remain. Please check the error messages above.")
+        print("   You may need to manually verify the file contents.")
+
+if __name__ == "__main__":
+    main()
