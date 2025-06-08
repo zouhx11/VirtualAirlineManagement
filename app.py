@@ -13,6 +13,7 @@ from modules.pilot_logbook_view import PilotLogbookView
 from modules.pilot_dashboard_view import PilotDashboardView
 from modules.schedule_view import ScheduleView
 from modules.settings_view import SettingsView
+from modules.route_economics_view import RouteEconomicsView
 
 
 class VirtualAirlineApp:
@@ -180,6 +181,11 @@ class VirtualAirlineApp:
                     selected_icon=ft.Icons.BOOK,
                     label="Logbook",
                 ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.MAP_OUTLINED,
+                    selected_icon=ft.Icons.MAP,
+                    label="Routes",
+                ),
             ],
             on_change=self.nav_changed,
         )
@@ -331,6 +337,8 @@ class VirtualAirlineApp:
             self.show_schedules()
         elif selected_index == 5:
             self.show_logbook()
+        elif selected_index == 6:
+            self.show_route_economics()
 
     def show_dashboard(self):
         """Show pilot dashboard."""
@@ -378,6 +386,16 @@ class VirtualAirlineApp:
         """Show pilot logbook."""
         logbook_view = PilotLogbookView(self.page)
         self.content_area.content = logbook_view.build()
+        self.page.update()
+
+    def show_route_economics(self):
+        """Show route economics management."""
+        if not self.selected_airline_id:
+            self.show_airline_selection()
+            return
+            
+        route_economics_view = RouteEconomicsView(self.page, self.selected_airline_id)
+        self.content_area.content = route_economics_view.build_view()
         self.page.update()
 
     def open_settings(self, e):

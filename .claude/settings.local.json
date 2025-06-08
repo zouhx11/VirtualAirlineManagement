@@ -10,7 +10,9 @@
       "Bash(uv pip install:*)",
       "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
       "Bash(python:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(sqlite3:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
