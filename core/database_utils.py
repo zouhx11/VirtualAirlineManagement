@@ -167,7 +167,10 @@ def calculate_rank_and_achievements(pilot_id: int, airline_id: str) -> Tuple[str
     finally:
         conn.close()
 
-def add_pilot(name: str, home_hub: str = "Unknown", current_location: str = "Unknown", connection: Optional[sqlite3.Connection] = None) -> None:
+def add_pilot(name: str, license_number: str = "ATP001", rating: str = "ATP", 
+              hours: int = 0, status: str = "active", home_hub: str = "KJFK", 
+              current_location: str = "KJFK", airline_id: int = 1, 
+              connection: Optional[sqlite3.Connection] = None) -> None:
     """Add a new pilot to the database."""
     conn = connection or connect_to_database()
     if conn is None:
@@ -175,10 +178,13 @@ def add_pilot(name: str, home_hub: str = "Unknown", current_location: str = "Unk
 
     try:
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO pilots (name, homeHub, currentLocation) VALUES (?, ?, ?)",
-            (name, home_hub, current_location),
-        )
+        hire_date = datetime.now().strftime("%Y-%m-%d")
+        cursor.execute("""
+            INSERT INTO pilots (name, license_number, rating, hours, status, 
+                              homeHub, currentLocation, airline_id, hire_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, license_number, rating, hours, status, home_hub, 
+              current_location, airline_id, hire_date))
         conn.commit()
     except sqlite3.Error as e:
         print(f"Database error while adding pilot: {e}")
@@ -635,6 +641,79 @@ def get_logbook_table_columns():
         return column_names
     except sqlite3.Error as e:
         logging.error(f"Error fetching table info: {e}")
+        return []
+    finally:
+        conn.close()
+
+def update_pilot(pilot_id: int, name: str, license_number: str, rating: str, 
+                hours: int, status: str, home_hub: str, current_location: str) -> bool:
+    """Update pilot information in the database."""
+    conn = connect_to_database()
+    if conn is None:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE pilots 
+            SET name = ?, license_number = ?, rating = ?, hours = ?, 
+                status = ?, homeHub = ?, currentLocation = ?
+            WHERE id = ?
+        """, (name, license_number, rating, hours, status, home_hub, current_location, pilot_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    except sqlite3.Error as e:
+        logging.error(f"Database error updating pilot: {e}")
+        return False
+    finally:
+        conn.close()
+
+def delete_pilot(pilot_id: int) -> bool:
+    """Delete pilot from the database."""
+    conn = connect_to_database()
+    if conn is None:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM pilots WHERE id = ?", (pilot_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    except sqlite3.Error as e:
+        logging.error(f"Database error deleting pilot: {e}")
+        return False
+    finally:
+        conn.close()
+
+def fetch_pilot_data_new(airline_id: int) -> List[dict]:
+    """Fetch pilot data for the specified airline as dictionary list."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, license_number, rating, hours, status, 
+                   homeHub, currentLocation, hire_date
+            FROM pilots
+            WHERE airline_id = ?
+        """, (airline_id,))
+        
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+        
+        pilots = []
+        for row in rows:
+            pilot = dict(zip(columns, row))
+            # Map database column names to expected names
+            pilot['home_hub'] = pilot.get('homeHub', '')
+            pilot['current_location'] = pilot.get('currentLocation', '')
+            pilots.append(pilot)
+        
+        return pilots
+    except sqlite3.Error as e:
+        logging.error(f"Database error fetching pilots: {e}")
         return []
     finally:
         conn.close()

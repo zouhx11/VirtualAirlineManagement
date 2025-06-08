@@ -80,20 +80,28 @@ def load_airlines_json():
     
     return default_airlines
 
-def create_button(parent, text, style, command, icon=None):
-    """Create a button with optional icon"""
-    try:
-        import ttkbootstrap as ttk
-        if icon and icon is not None:
-            btn = ttk.Button(parent, text=text, bootstyle=style, command=command, image=icon, compound='top')
-        else:
-            btn = ttk.Button(parent, text=text, bootstyle=style, command=command)
-        return btn
-    except Exception as e:
-        print(f"⚠️ Error creating button '{text}': {e}")
-        # Fallback button without icon
-        import ttkbootstrap as ttk
-        return ttk.Button(parent, text=text, bootstyle=style, command=command)
+def create_flet_button(text, icon, on_click, style="primary"):
+    """Create a Flet button with icon and text"""
+    import flet as ft
+    
+    style_map = {
+        "primary": ft.ButtonStyle(bgcolor="#2196f3", color="#ffffff"),
+        "success": ft.ButtonStyle(bgcolor="#4caf50", color="#ffffff"),
+        "info": ft.ButtonStyle(bgcolor="#03a9f4", color="#ffffff"),
+        "warning": ft.ButtonStyle(bgcolor="#ff9800", color="#ffffff"),
+        "danger": ft.ButtonStyle(bgcolor="#f44336", color="#ffffff"),
+        "secondary": ft.ButtonStyle(bgcolor="#bdbdbd", color="#ffffff"),
+        "light": ft.ButtonStyle(bgcolor="#eeeeee", color="#000000"),
+    }
+    
+    return ft.ElevatedButton(
+        text=text,
+        icon=icon,
+        on_click=on_click,
+        style=style_map.get(style, style_map["primary"]),
+        width=150,
+        height=60,
+    )
 
 def debounce(wait_time):
     """Decorator to debounce function calls"""
