@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ Virtual Airline Management - Real-Time Flight Tracking</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="time-speed">⚡ Speed:</label>
+                <select id="time-speed">
+                    <option value="1">1x Normal</option>
+                    <option value="2">2x Fast</option>
+                    <option value="5">5x Very Fast</option>
+                    <option value="10">10x Ultra Fast</option>
+                    <option value="20">20x Hyper Speed</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label><i class="fas fa-dollar-sign"></i> Cash:</label>
+                <span id="cash-balance" class="cash-amount">$0.0M</span>
+            </div>
+            
+            <div class="control-group">
+                <label><i class="fas fa-chart-line"></i> Monthly P&L:</label>
+                <span id="monthly-profit" class="profit-amount">$0</span>
+            </div>
+            
+            <div class="control-group">
+                <label><i class="fas fa-plane"></i> Fleet:</label>
+                <span id="fleet-count">0 aircraft</span>
+            </div>
+            
+            <div class="control-group">
+                <label><i class="fas fa-wifi"></i> Status:</label>
+                <span id="connection-status" class="status disconnected">Disconnected</span>
+            </div>
+            
+            <div class="control-group">
+                <button id="toggle-sidebar" class="btn btn-secondary">
+                    <i class="fas fa-bars"></i> Panel
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Map Container (Always Visible) -->
+            <div id="map" class="map-container">
+                <!-- 3D Flight Mode Toggle -->
+                <div class="map-3d-controls">
+                    <button id="toggle-3d-flight" class="btn btn-secondary">
+                        <i class="fas fa-cube"></i> 3D Flight Mode
+                    </button>
+                    <button id="toggle-2d-map" class="btn btn-secondary active" style="display: none;">
+                        <i class="fas fa-map"></i> 2D Map
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 3D Flight Viewer -->
+            <div id="flight-3d-viewer" class="flight-3d-viewer" style="display: none;">
+                <div id="flight-3d-container" class="flight-3d-container">
+                    <div class="aircraft-3d-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading 3D Flight View...
+                    </div>
+                </div>
+                <div class="flight-3d-controls">
+                    <button id="flight-3d-follow" class="btn btn-secondary">
+                        <i class="fas fa-video"></i> Follow Mode
+                    </button>
+                    <button id="flight-3d-free" class="btn btn-secondary active">
+                        <i class="fas fa-hand-rock"></i> Free Camera
+                    </button>
+                    <button id="flight-3d-reset" class="btn btn-secondary">
+                        <i class="fas fa-home"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div id="sidebar" class="sidebar">
+                <div class="sidebar-content">
+                    <!-- Flight Statistics -->
+                    <div class="stats-panel">
+                        <h3><i class="fas fa-chart-line"></i> Live Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="total-flights">0</div>
+                                <div class="stat-label">Active Flights</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="departing-flights">0</div>
+                                <div class="stat-label">Departing</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="enroute-flights">0</div>
+                                <div class="stat-label">En Route</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="arriving-flights">0</div>
+                                <div class="stat-label">Arriving</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Management Tabs -->
+                    <div class="tabs-container">
+                        <div class="tabs">
+                            <button class="tab-button active" data-tab="flights">
+                                <i class="fas fa-plane"></i> Flights
+                            </button>
+                            <button class="tab-button" data-tab="economics">
+                                <i class="fas fa-chart-pie"></i> Economics
+                            </button>
+                            <button class="tab-button" data-tab="marketplace">
+                                <i class="fas fa-shopping-cart"></i> Market
+                            </button>
+                            <button class="tab-button" data-tab="routes">
+                                <i class="fas fa-route"></i> Routes
+                            </button>
+                            <button class="tab-button" data-tab="fleet">
+                                <i class="fas fa-list"></i> Fleet
+                            </button>
+                        </div>
+
+                        <!-- Flights Tab -->
+                        <div id="flights-tab" class="tab-content active">
+                            <h4><i class="fas fa-plane"></i> Active Flights</h4>
+                            <div id="flights-list" class="flights-list">
+                                <div class="no-data">No active flights</div>
+                            </div>
+                        </div>
+
+                        <!-- Economics Tab -->
+                        <div id="economics-tab" class="tab-content">
+                            <h4><i class="fas fa-chart-pie"></i> Financial Overview</h4>
+                            
+                            <!-- Financial Metrics -->
+                            <div class="financial-metrics">
+                                <div class="metric-item">
+                                    <div class="metric-label">Monthly Revenue</div>
+                                    <div class="metric-value positive" id="monthly-revenue">$0</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Monthly Costs</div>
+                                    <div class="metric-value negative" id="monthly-costs">$0</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Net Profit</div>
+                                    <div class="metric-value" id="net-profit">$0</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">ROI</div>
+                                    <div class="metric-value" id="roi">0%</div>
+                                </div>
+                            </div>
+
+                            <!-- Cost Breakdown -->
+                            <div class="cost-breakdown">
+                                <h5><i class="fas fa-chart-bar"></i> Cost Breakdown</h5>
+                                <div id="cost-chart" class="cost-chart">
+                                    <div class="cost-item">
+                                        <span class="cost-label">Fuel</span>
+                                        <span class="cost-bar fuel-bar"></span>
+                                        <span class="cost-value" id="fuel-cost">$0</span>
+                                    </div>
+                                    <div class="cost-item">
+                                        <span class="cost-label">Crew</span>
+                                        <span class="cost-bar crew-bar"></span>
+                                        <span class="cost-value" id="crew-cost">$0</span>
+                                    </div>
+                                    <div class="cost-item">
+                                        <span class="cost-label">Maintenance</span>
+                                        <span class="cost-bar maintenance-bar"></span>
+                                        <span class="cost-value" id="maintenance-cost">$0</span>
+                                    </div>
+                                    <div class="cost-item">
+                                        <span class="cost-label">Airport Fees</span>
+                                        <span class="cost-bar fees-bar"></span>
+                                        <span class="cost-value" id="fees-cost">$0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Route Profitability -->
+                            <div class="route-profitability">
+                                <h5><i class="fas fa-route"></i> Route Performance</h5>
+                                <div id="route-performance" class="route-performance-list">
+                                    <div class="no-data">Assign routes to see profitability</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Marketplace Tab -->
+                        <div id="marketplace-tab" class="tab-content">
+                            <h4><i class="fas fa-shopping-cart"></i> Aircraft Marketplace</h4>
+                            
+                            <div class="marketplace-controls">
+                                <button id="load-marketplace" class="btn btn-primary">
+                                    <i class="fas fa-sync"></i> Load Aircraft
+                                </button>
+                                
+                                <!-- View Toggle -->
+                                <div class="view-toggle" style="display: inline-block; margin-left: 10px;">
+                                    <button id="marketplace-2d-view" class="btn btn-secondary active">
+                                        <i class="fas fa-list"></i> List
+                                    </button>
+                                    <button id="marketplace-3d-view" class="btn btn-secondary">
+                                        <i class="fas fa-cube"></i> 3D
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 2D Marketplace List -->
+                            <div id="marketplace-list" class="marketplace-list">
+                                <div class="no-data">Click "Load Aircraft" to see available aircraft</div>
+                            </div>
+                            
+                            <!-- 3D Marketplace Gallery -->
+                            <div id="marketplace-3d-gallery" class="marketplace-3d-gallery" style="display: none;">
+                                <div id="marketplace-3d-container" class="aircraft-3d-container">
+                                    <div class="no-data">Load aircraft to see 3D models</div>
+                                </div>
+                                <div id="marketplace-3d-info" class="aircraft-3d-info">
+                                    <h5>Select an aircraft to inspect</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Routes Tab -->
+                        <div id="routes-tab" class="tab-content">
+                            <h4><i class="fas fa-route"></i> Route Assignment</h4>
+                            <div class="route-assignment">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="aircraft-select">Aircraft:</label>
+                                        <select id="aircraft-select">
+                                            <option value="">Select Aircraft</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="route-select">Route:</label>
+                                        <select id="route-select">
+                                            <option value="">Select Route</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="frequency-input">Weekly Frequency:</label>
+                                        <input type="number" id="frequency-input" min="1" max="21" value="7">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fare-input">Economy Fare ($):</label>
+                                        <input type="number" id="fare-input" min="50" value="250" step="10">
+                                    </div>
+                                </div>
+                                
+                                <!-- Route Analysis -->
+                                <div class="route-analysis" id="route-analysis" style="display: none;">
+                                    <h5><i class="fas fa-calculator"></i> Route Analysis</h5>
+                                    <div class="analysis-metrics">
+                                        <div class="analysis-item">
+                                            <span class="analysis-label">Monthly Revenue:</span>
+                                            <span class="analysis-value" id="analysis-revenue">$0</span>
+                                        </div>
+                                        <div class="analysis-item">
+                                            <span class="analysis-label">Monthly Costs:</span>
+                                            <span class="analysis-value" id="analysis-costs">$0</span>
+                                        </div>
+                                        <div class="analysis-item">
+                                            <span class="analysis-label">Monthly Profit:</span>
+                                            <span class="analysis-value" id="analysis-profit">$0</span>
+                                        </div>
+                                        <div class="analysis-item">
+                                            <span class="analysis-label">Profit Margin:</span>
+                                            <span class="analysis-value" id="analysis-margin">0%</span>
+                                        </div>
+                                    </div>
+                                    <div class="profitability-indicator" id="profitability-indicator">
+                                        Select route to see analysis
+                                    </div>
+                                </div>
+                                
+                                <button id="assign-route" class="btn btn-primary">
+                                    <i class="fas fa-link"></i> Assign Route
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fleet Tab -->
+                        <div id="fleet-tab" class="tab-content">
+                            <h4><i class="fas fa-list"></i> Fleet Management</h4>
+                            
+                            <!-- View Toggle -->
+                            <div class="view-toggle">
+                                <button id="fleet-2d-view" class="btn btn-secondary active">
+                                    <i class="fas fa-list"></i> List View
+                                </button>
+                                <button id="fleet-3d-view" class="btn btn-secondary">
+                                    <i class="fas fa-cube"></i> 3D Gallery
+                                </button>
+                            </div>
+                            
+                            <!-- 2D Fleet List -->
+                            <div id="fleet-list" class="fleet-list">
+                                <div class="no-data">Loading fleet...</div>
+                            </div>
+                            
+                            <!-- 3D Fleet Gallery -->
+                            <div id="fleet-3d-gallery" class="fleet-3d-gallery" style="display: none;">
+                                <div id="fleet-3d-container" class="aircraft-3d-container">
+                                    <div class="no-data">Switch to 3D view to see your aircraft models</div>
+                                </div>
+                                <div id="fleet-3d-info" class="aircraft-3d-info">
+                                    <h5>Select an aircraft to view details</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h4>Legend</h4>
+            <div class="legend-item">
+                <i class="fas fa-circle" style="color: #3388ff;"></i> Airports
+            </div>
+            <div class="legend-item">
+                <i class="fas fa-plane" style="color: green;"></i> Departing
+            </div>
+            <div class="legend-item">
+                <i class="fas fa-plane" style="color: red;"></i> En Route
+            </div>
+            <div class="legend-item">
+                <i class="fas fa-plane" style="color: orange;"></i> Arriving
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="{{ url_for('static', filename='js/aircraft3d.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

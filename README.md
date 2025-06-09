@@ -1,120 +1,150 @@
-# Virtual Airline Management
+# ✈️ Virtual Airline Management - Real-Time Flight Tracking
 
-Virtual Airline Management is a Python-based application designed to simulate and manage the operations of a virtual airline. It offers functionalities for managing pilots, fleets, flight schedules, and more, providing a comprehensive dashboard for monitoring and administration.
+A modern web-based airline management system with **real-time aircraft tracking**, **economics simulation**, and **smooth WebSocket updates** - no page refreshes!
 
-## Features
+## 🚀 Features
 
-- **Pilot Management:** Add, edit, and remove pilots from your virtual airline.
-- **Fleet Management:** Manage your aircraft fleet, including adding new aircraft and tracking existing ones.
-- **Flight Scheduling:** Integrate with [FlightAware AeroAPI](https://flightaware.com/commercial/aeroapi/) to fetch and display real-time flight schedules based on the current location.
-- **Pilot Logbook:** Keep track of pilot flight logs and history.
-- **Dashboard:** Interactive dashboard to monitor airline performance and metrics.
+### **Real-Time Flight Tracking**
+- **Live aircraft movement** on interactive Leaflet maps
+- **WebSocket-powered updates** - no page refreshes, no eye strain
+- **Dynamic aircraft markers** with heading, altitude, and status
+- **Route visualization** with flight paths and airports
 
-## Installation
+### **Economics & Financial Management**
+- **Real-time profit/loss tracking** with monthly financial reports  
+- **Route profitability analysis** with instant recommendations
+- **Aircraft marketplace** - buy/lease aircraft with financial impact
+- **Cost breakdown** - fuel, crew, maintenance, airport fees
+- **Cash balance monitoring** and ROI calculations
+
+### **Professional Interface**
+- **Dark theme** optimized for extended use
+- **Map-centric design** with maximum screen real estate
+- **Responsive controls** with live financial displays
+- **Tabbed management panels** for fleet, routes, and marketplace
+
+## 🛠️ Installation
 
 ### Prerequisites
+- Python 3.8+
+- Node.js (for some dependencies)
 
-- **Python 3.8+**: Ensure Python is installed on your system. You can download it from [python.org](https://www.python.org/).
-- **FlightAware AeroAPI Account**: Sign up for an account to obtain your `API_KEY` and `API_SECRET`.
+### Quick Setup
+```bash
+# Clone and enter project
+git clone <your-repository-url>
+cd VirtualAirlineManagement
 
-### Setup Steps
+# Install dependencies with uv (recommended)
+uv sync
 
-1. **Clone the Repository:**
+# Or use pip
+pip install -r requirements.txt
 
-   ```sh
-   git clone https://github.com/yourusername/VirtualAirlineManagement.git
-   cd VirtualAirlineManagement
-   ```
-2. **Create a Virtual Environment:**
-   ```sh
-   python -m venv venv
-   ```
+# Initialize database
+python scripts/initial_setup.py
 
-3. **Activate the Virtual Environment:**
-    - Windows:
-    ```sh
-    venv\Scripts\activate
-    ```
+# Create sample data
+python scripts/create_airline_data.py
 
-    - Linux/MacOS:
-    ```sh
-    source venv/bin/activate
-    ```
-4. **Upgrade pip:**
-    ```sh
-    pip install --upgrade pip
-    ```
+# Launch the app
+python flask_app.py
+```
 
-5. **Install Dependencies:**
-    ```sh
-    pip install -r requirements.txt
-    ```
+**🌐 Open http://127.0.0.1:5000 in your browser**
 
-6. **Configure the Application:**
+## 📁 Project Structure
 
-    Update the config.ini file with your AeroAPI credentials and other configurations.
-    ```sh
-    [DATABASES]
-    userdata = C:\\users\\username\\Documents\\SimToolkitPro\\userdata.db
-   
-    [PREFERENCES]
-    theme = cyborg
-    data_refresh_rate = 30
-    selected_airline = Qantas (ID: 4093)
-    homehub = YSSY
-    current_location = YSSY
-   
-    [AeroAPI]
-    api_key = YOUR_API_KEY
-    ```
-
-7. **Run the Application:**
-
-### Usage
-Once the application is running, you can navigate through the GUI to manage different aspects of your virtual airline:
-
-- **Pilot Management:** Add or remove pilots.
-- **Fleet Management:** Manage your aircraft fleet.
-- **Flight Schedules:** View and schedule flights using AeroAPI integration.
-- **Pilot Logbook:** Access and manage pilot flight logs.
-- **Dashboard:** View comprehensive analytics and metrics.
-
-### Project Structure
 ```
 VirtualAirlineManagement/
-├── __pycache__/
-├── .gitignore
-├── .vscode/
-│   └── settings.json
-├── application.log
-├── [config.ini](config.ini)
+├── flask_app.py              # Main Flask application with WebSocket
+├── templates/index.html      # Frontend HTML
+├── static/
+│   ├── css/style.css        # Dark theme styling
+│   └── js/app.js            # Real-time JavaScript client
 ├── core/
-│   ├── __pycache__/
-│   ├── [config_manager.py](core/config_manager.py)
-│   ├── [database_utils.py](core/database_utils.py)
-│   ├── [settings.py](core/settings.py)
-│   └── [utils.py](core/utils.py)
-├── Database_Utils.log
-├── icons/
-├── [instructions.md](instructions.md)
-├── [main.py](main.py)
+│   ├── config_manager.py    # Configuration management
+│   ├── database_utils.py    # Database operations
+│   └── utils.py            # Shared utilities
 ├── modules/
-│   ├── __pycache__/
-│   ├── [fleet_management.py](modules/fleet_management.py)
-│   ├── [pilot_dashboard.py](modules/pilot_dashboard.py)
-│   ├── [pilot_logbook.py](modules/pilot_logbook.py)
-│   ├── [pilot_management_gui.py](modules/pilot_management_gui.py)
-│   └── [schedule.py](modules/schedule.py)
-├── pilot_logbook.log
-├── [README.md](README.md)
-├── [requirements.txt](requirements.txt)
+│   ├── aircraft_marketplace.py  # Aircraft buying/leasing
+│   ├── route_management.py     # Route economics & assignments
+│   ├── market_competition.py   # AI competition system
+│   ├── forecasting_engine.py   # Economic forecasting
+│   └── secondary_aircraft_market.py  # Used aircraft market
 ├── scripts/
-│   ├── [create_pilots_table.py](scripts/create_pilots_table.py)
-│   ├── [test_fetch_logbook_data.py](scripts/test_fetch_logbook_data.py)
-│   └── ...
-├── tests/
-│   └── ...
-├── venv/
-│   └── ...
-└── [VirtualAirlineManagement.code-workspace](VirtualAirlineManagement.code-workspace)
+│   ├── initial_setup.py     # Database initialization
+│   ├── create_airline_data.py  # Sample data generation
+│   └── migrate_aircraft_system.py  # Schema updates
+├── config.ini              # Configuration file
+├── userdata.db            # SQLite database
+└── airline_data.json      # Reference airline data
 ```
+
+## 🎮 How to Use
+
+### **Getting Started**
+1. **Launch the app** and visit http://127.0.0.1:5000
+2. **Generate routes** using the sidebar panel
+3. **Buy aircraft** from the marketplace
+4. **Assign routes** and watch aircraft fly in real-time!
+
+### **Key Controls**
+- **⚡ Time Speed**: 1x to 20x speed multipliers for faster flights
+- **💰 Financial Display**: Live cash balance and monthly profit/loss
+- **🎮 Management Tabs**: Switch between flights, economics, marketplace, routes, and fleet
+- **📊 Route Analysis**: See profitability before assigning aircraft
+
+### **Economics Features**
+- **Route Analysis**: See revenue, costs, and profit before assignment
+- **Cost Tracking**: Monitor fuel, crew, maintenance, and airport fees
+- **Performance Monitoring**: Track ROI and profit margins
+- **Smart Recommendations**: Color-coded profitability indicators
+
+## 🔧 Configuration
+
+Edit `config.ini` for:
+- Database paths
+- FlightAware API credentials (optional)
+- Economic simulation parameters
+- Aircraft marketplace settings
+
+## 🚀 Architecture
+
+### **Backend (Flask + Socket.IO)**
+- **Real-time WebSocket communication** for aircraft updates
+- **RESTful APIs** for aircraft, routes, and financial data
+- **Economics engine** for route profitability calculations
+- **Background threads** for continuous aircraft position updates
+
+### **Frontend (JavaScript + Leaflet)**
+- **Interactive Leaflet maps** with dark CartoDB tiles
+- **WebSocket client** for real-time position updates
+- **Responsive UI** with professional dark theme
+- **No page refreshes** - only aircraft positions update
+
+## 📈 Development
+
+### **Key Technologies**
+- **Flask + Socket.IO**: Real-time web framework
+- **Leaflet**: Interactive mapping library
+- **SQLite**: Embedded database
+- **JavaScript ES6**: Modern frontend development
+
+### **Adding Features**
+1. **Backend**: Add API endpoints in `flask_app.py`
+2. **Frontend**: Extend `static/js/app.js` for UI features
+3. **Styling**: Update `static/css/style.css` for visual changes
+4. **Database**: Use scripts in `scripts/` for schema changes
+
+## 🎯 Next Steps
+
+The application is designed for expansion:
+- **AI Competition**: Market competition with computer airlines
+- **Weather System**: Weather-based flight delays and seasonal demand  
+- **Advanced Analytics**: Forecasting and optimization tools
+- **Multiplayer**: Multi-user airline competition
+
+## 📝 License
+
+MIT License - Build amazing airline simulations!

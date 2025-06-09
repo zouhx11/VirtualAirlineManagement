@@ -1,0 +1,943 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a1a;
+    color: #ffffff;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Controls Panel */
+.controls-panel {
+    background: #2d2d2d;
+    padding: 10px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    border-bottom: 1px solid #444;
+    z-index: 999;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* Financial displays in header */
+.cash-amount {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.profit-amount {
+    font-weight: bold;
+}
+
+.profit-amount.positive {
+    color: #4CAF50;
+}
+
+.profit-amount.negative {
+    color: #f44336;
+}
+
+select, input {
+    background: #444;
+    color: white;
+    border: 1px solid #666;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status.connected {
+    background: #4CAF50;
+    color: white;
+}
+
+.status.disconnected {
+    background: #f44336;
+    color: white;
+}
+
+/* Buttons */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #2196F3;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1976D2;
+}
+
+.btn-secondary {
+    background: #666;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #555;
+}
+
+.btn-success {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #45a049;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Map Container */
+.map-container {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 350px;
+    background: #2d2d2d;
+    border-left: 1px solid #444;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 10;
+}
+
+.sidebar.hidden {
+    transform: translateX(100%);
+}
+
+.sidebar-content {
+    padding: 20px;
+}
+
+/* Statistics Panel */
+.stats-panel {
+    margin-bottom: 20px;
+}
+
+.stats-panel h3 {
+    color: #4CAF50;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stat-item {
+    background: #3d3d3d;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #555;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+/* Tabs */
+.tabs-container {
+    background: #3d3d3d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tabs {
+    display: flex;
+    background: #444;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    color: #ccc;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    background: #4CAF50;
+    color: white;
+}
+
+.tab-button:hover:not(.active) {
+    background: #555;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #ccc;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Economics Tab */
+.financial-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.metric-item {
+    background: #444;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-bottom: 5px;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.metric-value.positive {
+    color: #4CAF50;
+}
+
+.metric-value.negative {
+    color: #f44336;
+}
+
+/* Cost Breakdown */
+.cost-breakdown {
+    margin-bottom: 20px;
+}
+
+.cost-breakdown h5 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.cost-chart {
+    background: #444;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.cost-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.cost-label {
+    width: 70px;
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.cost-bar {
+    flex: 1;
+    height: 8px;
+    background: #555;
+    border-radius: 4px;
+    position: relative;
+}
+
+.cost-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.fuel-bar::after {
+    background: #FF9800;
+    width: var(--fuel-width, 0%);
+}
+
+.crew-bar::after {
+    background: #2196F3;
+    width: var(--crew-width, 0%);
+}
+
+.maintenance-bar::after {
+    background: #9C27B0;
+    width: var(--maintenance-width, 0%);
+}
+
+.fees-bar::after {
+    background: #607D8B;
+    width: var(--fees-width, 0%);
+}
+
+.cost-value {
+    width: 60px;
+    text-align: right;
+    font-size: 0.8rem;
+    color: #4CAF50;
+}
+
+/* Route Analysis */
+.route-analysis {
+    background: #444;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.route-analysis h5 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.analysis-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+.analysis-label {
+    color: #ccc;
+}
+
+.analysis-value {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.profitability-indicator {
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.profitability-indicator.profitable {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+.profitability-indicator.unprofitable {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid #f44336;
+}
+
+.profitability-indicator.marginal {
+    background: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+    border: 1px solid #FF9800;
+}
+
+/* Route Performance */
+.route-performance-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.route-performance-item {
+    background: #555;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.route-info {
+    flex: 1;
+}
+
+.route-name {
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 2px;
+}
+
+.route-stats {
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.route-profit {
+    text-align: right;
+    font-weight: bold;
+}
+
+.route-profit.positive {
+    color: #4CAF50;
+}
+
+.route-profit.negative {
+    color: #f44336;
+}
+
+/* Lists */
+.flights-list,
+.marketplace-list,
+.fleet-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.flight-item,
+.aircraft-item,
+.fleet-item {
+    background: #444;
+    margin-bottom: 10px;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #555;
+}
+
+.flight-item h5,
+.aircraft-item h5,
+.fleet-item h5 {
+    color: #4CAF50;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.flight-item p,
+.aircraft-item p,
+.fleet-item p {
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    color: #ccc;
+}
+
+.flight-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.flight-status.departing {
+    background: #4CAF50;
+    color: white;
+}
+
+.flight-status.en_route {
+    background: #f44336;
+    color: white;
+}
+
+.flight-status.arriving {
+    background: #FF9800;
+    color: white;
+}
+
+.aircraft-item .price {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.aircraft-item .btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    margin-right: 5px;
+    margin-top: 5px;
+}
+
+.no-data {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Legend */
+.legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(45, 45, 45, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    z-index: 1000;
+}
+
+.legend h4 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+/* Scrollbars */
+.sidebar::-webkit-scrollbar,
+.flights-list::-webkit-scrollbar,
+.marketplace-list::-webkit-scrollbar,
+.fleet-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.flights-list::-webkit-scrollbar-track,
+.marketplace-list::-webkit-scrollbar-track,
+.fleet-list::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.flights-list::-webkit-scrollbar-thumb,
+.marketplace-list::-webkit-scrollbar-thumb,
+.fleet-list::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.flights-list::-webkit-scrollbar-thumb:hover,
+.marketplace-list::-webkit-scrollbar-thumb:hover,
+.fleet-list::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* 3D View Components */
+.view-toggle {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 5px;
+}
+
+.view-toggle .btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.view-toggle .btn.active {
+    background: #4CAF50;
+    color: white;
+}
+
+/* 3D Gallery */
+.fleet-3d-gallery,
+.marketplace-3d-gallery {
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+}
+
+.aircraft-3d-container {
+    flex: 1;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.aircraft-3d-info {
+    background: #444;
+    padding: 15px;
+    border-radius: 6px;
+    min-height: 80px;
+}
+
+.aircraft-3d-info h5 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.aircraft-3d-info p {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+/* 3D Controls */
+.aircraft-3d-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+}
+
+.aircraft-3d-controls .btn {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.aircraft-3d-controls .btn:hover {
+    opacity: 1;
+}
+
+/* 3D Model Navigation */
+.model-navigation {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 100;
+}
+
+.model-nav-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(68, 68, 68, 0.9);
+    border: 1px solid #666;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.model-nav-btn:hover {
+    background: rgba(76, 175, 80, 0.9);
+    border-color: #4CAF50;
+}
+
+.model-nav-btn.active {
+    background: #4CAF50;
+    border-color: #4CAF50;
+}
+
+/* 3D Loading Indicator */
+.aircraft-3d-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #4CAF50;
+    font-size: 1.2rem;
+    z-index: 50;
+}
+
+.aircraft-3d-loading i {
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 3D Error State */
+.aircraft-3d-error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #f44336;
+    z-index: 50;
+}
+
+.aircraft-3d-error i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+/* 3D Flight Mode */
+.map-3d-controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.flight-3d-viewer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background: #000;
+}
+
+.flight-3d-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.flight-3d-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+    background: rgba(45, 45, 45, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #666;
+}
+
+.flight-3d-controls .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.flight-info-overlay {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(45, 45, 45, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #666;
+    min-width: 200px;
+    z-index: 100;
+}
+
+.flight-info-overlay h5 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.flight-info-overlay p {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.flight-altitude-indicator {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(45, 45, 45, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #666;
+    z-index: 100;
+}
+
+.altitude-scale {
+    width: 30px;
+    height: 200px;
+    background: linear-gradient(to top, #2196F3, #4CAF50, #FF9800, #f44336);
+    border-radius: 4px;
+    position: relative;
+}
+
+.altitude-marker {
+    position: absolute;
+    right: -40px;
+    width: 8px;
+    height: 2px;
+    background: #fff;
+    transition: top 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+    }
+    
+    .controls-panel {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .fleet-3d-gallery,
+    .marketplace-3d-gallery {
+        height: 300px;
+    }
+    
+    .view-toggle {
+        flex-direction: column;
+    }
+}
+
+/* 3D Flight Mode Labels */
+.flight-3d-label {
+    position: absolute !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+    font-size: 12px !important;
+    pointer-events: none !important;
+    z-index: 100 !important;
+    font-family: 'Segoe UI', sans-serif !important;
+    white-space: nowrap !important;
+}
+
+/* 3D Scene Enhancements */
+.flight-3d-container canvas {
+    border-radius: 8px;
+}
+
+.flight-3d-viewer {
+    background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #B6E4E8 100%);
+}
+
+/* Button state improvements */
+.btn.active {
+    background: #4CAF50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.updating {
+    animation: pulse 1s infinite;
+}
+
+@keyframes flyIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.aircraft-3d-container {
+    animation: flyIn 0.5s ease-out;
+}

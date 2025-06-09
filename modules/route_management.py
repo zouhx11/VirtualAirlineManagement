@@ -599,7 +599,7 @@ class RouteEconomics:
             return False, "Route not found"
         
         # Validate aircraft exists and is available
-        cursor.execute("SELECT id FROM owned_aircraft WHERE id = ?", (aircraft_id,))
+        cursor.execute("SELECT id FROM fleet WHERE id = ?", (aircraft_id,))
         if not cursor.fetchone():
             conn.close()
             return False, "Aircraft not found"
@@ -621,14 +621,21 @@ class RouteEconomics:
             load_factor_target, datetime.now().isoformat(), None, 1
         ))
         
-        # Update aircraft route assignments
-        cursor.execute("SELECT route_assignments FROM owned_aircraft WHERE id = ?", (aircraft_id,))
-        current_assignments = cursor.fetchone()[0]
-        assignments_list = json.loads(current_assignments) if current_assignments else []
-        assignments_list.append(route_id)
-        
-        cursor.execute("UPDATE owned_aircraft SET route_assignments = ? WHERE id = ?", 
-                      (json.dumps(assignments_list), aircraft_id))
+        # Update aircraft route assignments (optional - for tracking)
+        # Note: Using fleet table instead of owned_aircraft
+        try:
+            cursor.execute("SELECT spec_data FROM fleet WHERE id = ?", (aircraft_id,))
+            result = cursor.fetchone()
+            if result and result[0]:
+                spec_data = json.loads(result[0])
+                if 'route_assignments' not in spec_data:
+                    spec_data['route_assignments'] = []
+                spec_data['route_assignments'].append(route_id)
+                cursor.execute("UPDATE fleet SET spec_data = ? WHERE id = ?", 
+                              (json.dumps(spec_data), aircraft_id))
+        except Exception:
+            # If spec_data doesn't exist or is malformed, continue without error
+            pass
         
         conn.commit()
         conn.close()

@@ -75,7 +75,10 @@ def create_initial_database(db_path: str):
                 rating TEXT,
                 hours INTEGER DEFAULT 0,
                 hire_date TEXT,
-                status TEXT DEFAULT 'active'
+                status TEXT DEFAULT 'active',
+                airline_id INTEGER DEFAULT 1,
+                homeHub TEXT DEFAULT 'Unknown',
+                currentLocation TEXT DEFAULT 'Unknown'
             )
         ''')
         

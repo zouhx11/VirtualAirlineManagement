@@ -363,11 +363,24 @@ class AircraftMarketplace:
                 aircraft.available_until.isoformat(),
                 aircraft.maintenance_due_hours,
                 json.dumps([f.value for f in aircraft.financing_available]),
-                json.dumps(asdict(aircraft.spec))
+                json.dumps(self._spec_to_dict(aircraft.spec))
             ))
         
         conn.commit()
         conn.close()
+    
+    def _spec_to_dict(self, spec: AircraftSpec) -> Dict:
+        """Convert AircraftSpec to dictionary with enum values"""
+        spec_dict = asdict(spec)
+        # Convert enum to its value
+        spec_dict['category'] = spec.category.value
+        return spec_dict
+    
+    def _dict_to_spec(self, spec_dict: Dict) -> AircraftSpec:
+        """Convert dictionary back to AircraftSpec with proper enum"""
+        # Convert string back to enum
+        spec_dict['category'] = AircraftCategory(spec_dict['category'])
+        return AircraftSpec(**spec_dict)
     
     def get_market_aircraft(self, filters: Dict = None) -> List[MarketAircraft]:
         """Retrieve market aircraft with optional filters"""
@@ -405,7 +418,7 @@ class AircraftMarketplace:
         aircraft_list = []
         for row in rows:
             spec_data = json.loads(row[13])
-            spec = AircraftSpec(**spec_data)
+            spec = self._dict_to_spec(spec_data)
             
             aircraft = MarketAircraft(
                 id=row[0],
@@ -439,9 +452,14 @@ class AircraftMarketplace:
         if not row:
             return False, "Aircraft not found in marketplace", None
         
+        # Check airline's current cash balance
+        cursor.execute("SELECT cash_balance FROM airline_finances ORDER BY date DESC LIMIT 1")
+        balance_row = cursor.fetchone()
+        current_cash = balance_row[0] if balance_row else 0
+        
         # Create MarketAircraft object
         spec_data = json.loads(row[13])
-        spec = AircraftSpec(**spec_data)
+        spec = self._dict_to_spec(spec_data)
         market_aircraft = MarketAircraft(
             id=row[0], spec=spec, condition=AircraftCondition(row[2]),
             age_years=row[3], total_flight_hours=row[4], cycles=row[5],
@@ -459,17 +477,26 @@ class AircraftMarketplace:
         monthly_payment = 0
         remaining_payments = 0
         purchase_price = market_aircraft.asking_price
+        upfront_cost = 0  # Amount needed immediately
         
         if financing_type == FinancingType.LEASE:
             monthly_payment = market_aircraft.lease_rate_monthly
             remaining_payments = 120  # 10 year lease
             purchase_price = 0  # No upfront cost for lease
+            upfront_cost = 0  # Leases typically have no upfront cost
         elif financing_type == FinancingType.LOAN:
             loan_amount = purchase_price - down_payment
             interest_rate = 0.05 / 12  # 5% annual rate
             remaining_payments = 240  # 20 year loan
+            upfront_cost = down_payment  # Down payment required
             if loan_amount > 0:
                 monthly_payment = loan_amount * (interest_rate * (1 + interest_rate)**remaining_payments) / ((1 + interest_rate)**remaining_payments - 1)
+        elif financing_type == FinancingType.CASH:
+            upfront_cost = purchase_price  # Full amount needed upfront
+        
+        # Check if airline has sufficient cash
+        if upfront_cost > current_cash:
+            return False, f"Insufficient funds. Need ${upfront_cost:.1f}M but only have ${current_cash:.1f}M available.", None
         
         # Create owned aircraft
         owned_aircraft = OwnedAircraft(
@@ -511,7 +538,7 @@ class AircraftMarketplace:
             owned_aircraft.last_maintenance.isoformat(),
             owned_aircraft.utilization_hours_month,
             json.dumps(owned_aircraft.route_assignments),
-            json.dumps(asdict(owned_aircraft.spec))
+            json.dumps(self._spec_to_dict(owned_aircraft.spec))
         ))
         
         # Record transaction
@@ -533,10 +560,24 @@ class AircraftMarketplace:
         # Remove from market
         cursor.execute("DELETE FROM market_aircraft WHERE id = ?", (aircraft_id,))
         
+        # Update airline's cash balance
+        new_cash_balance = current_cash - upfront_cost
+        cursor.execute('''
+            INSERT INTO airline_finances (date, cash_balance, revenue, expenses, profit_loss, notes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            datetime.now().isoformat(),
+            new_cash_balance,
+            0,  # No revenue from this transaction
+            upfront_cost,  # This is an expense
+            -upfront_cost,  # Negative profit (expense)
+            f"Aircraft purchase: {aircraft_id} via {financing_type.value}"
+        ))
+        
         conn.commit()
         conn.close()
         
-        return True, "Aircraft purchased successfully", owned_aircraft
+        return True, f"Aircraft purchased successfully! New cash balance: ${new_cash_balance:.1f}M", owned_aircraft
     
     def get_owned_aircraft(self) -> List[OwnedAircraft]:
         """Get all owned aircraft"""
@@ -550,7 +591,7 @@ class AircraftMarketplace:
         aircraft_list = []
         for row in rows:
             spec_data = json.loads(row[16])
-            spec = AircraftSpec(**spec_data)
+            spec = self._dict_to_spec(spec_data)
             
             aircraft = OwnedAircraft(
                 id=row[0],
@@ -587,6 +628,17 @@ class AircraftMarketplace:
             "maintenance_costs": total_maintenance,
             "total_monthly": total_payments + total_maintenance
         }
+    
+    def get_current_cash_balance(self) -> float:
+        """Get the airline's current cash balance"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT cash_balance FROM airline_finances ORDER BY date DESC LIMIT 1")
+        balance_row = cursor.fetchone()
+        conn.close()
+        
+        return balance_row[0] if balance_row else 0.0
 
 
 # Example usage and testing

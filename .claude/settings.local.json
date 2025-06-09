@@ -12,7 +12,26 @@
       "Bash(python:*)",
       "Bash(rg:*)",
       "Bash(sqlite3:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:flet.dev)",
+      "Bash(pip install:*)",
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)",
+      "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"ft\\.icons\" /mnt/e/GitHub/VirtualAirlineManagement/modules/)",
+      "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"ft\\.icons\" /mnt/e/GitHub/VirtualAirlineManagement/modules/ --max-count=50)",
+      "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"ft\\.icons\" /mnt/e/GitHub/VirtualAirlineManagement/modules/analytics_dashboard_view.py)",
+      "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"ft\\.icons\" /mnt/e/GitHub/VirtualAirlineManagement/modules/world_map_view.py /mnt/e/GitHub/VirtualAirlineManagement/modules/aircraft_inventory_view.py /mnt/e/GitHub/VirtualAirlineManagement/modules/analytics_dashboard_view.py /mnt/e/GitHub/VirtualAirlineManagement/modules/secondary_market_view.py /mnt/e/GitHub/VirtualAirlineManagement/modules/pilot_management.py /mnt/e/GitHub/VirtualAirlineManagement/modules/pilot_dashboard_view.py)",
+      "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n --no-line-number \"ft\\.icons\" /mnt/e/GitHub/VirtualAirlineManagement/modules/)",
+      "Bash(chmod:*)",
+      "Bash(uv pip:*)",
+      "Bash(pkill:*)",
+      "Bash(cp:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

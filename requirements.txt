@@ -1,2 +1,6 @@
 flet>=0.21.0
-requests==2.32.3
+requests>=2.32.3
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.15.0
+Pillow>=10.0.0
