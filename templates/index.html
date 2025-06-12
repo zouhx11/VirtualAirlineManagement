@@ -8,6 +8,9 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- MapTiler SDK CSS -->
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.css" rel="stylesheet" />
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
@@ -50,8 +53,26 @@
             </div>
             
             <div class="control-group">
+                <button id="toggle-routes" class="btn btn-secondary">
+                    <i class="fas fa-route"></i> Routes
+                </button>
+            </div>
+            
+            <div class="control-group">
+                <button id="toggle-weather" class="btn btn-secondary active">
+                    <i class="fas fa-cloud"></i> Weather
+                </button>
+            </div>
+            
+            <div class="control-group">
                 <button id="toggle-sidebar" class="btn btn-secondary">
                     <i class="fas fa-bars"></i> Panel
+                </button>
+            </div>
+            
+            <div class="control-group">
+                <button id="help-tutorial" class="btn btn-secondary">
+                    <i class="fas fa-question-circle"></i> Help
                 </button>
             </div>
         </div>
@@ -78,15 +99,10 @@
                         <i class="fas fa-spinner fa-spin"></i> Loading 3D Flight View...
                     </div>
                 </div>
-                <div class="flight-3d-controls">
-                    <button id="flight-3d-follow" class="btn btn-secondary">
-                        <i class="fas fa-video"></i> Follow Mode
-                    </button>
-                    <button id="flight-3d-free" class="btn btn-secondary active">
-                        <i class="fas fa-hand-rock"></i> Free Camera
-                    </button>
-                    <button id="flight-3d-reset" class="btn btn-secondary">
-                        <i class="fas fa-home"></i> Reset
+                <!-- 3D Exit Button -->
+                <div class="flight-3d-exit">
+                    <button id="exit-3d-mode" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Exit 3D Mode
                     </button>
                 </div>
             </div>
@@ -213,31 +229,11 @@
                                 <button id="load-marketplace" class="btn btn-primary">
                                     <i class="fas fa-sync"></i> Load Aircraft
                                 </button>
-                                
-                                <!-- View Toggle -->
-                                <div class="view-toggle" style="display: inline-block; margin-left: 10px;">
-                                    <button id="marketplace-2d-view" class="btn btn-secondary active">
-                                        <i class="fas fa-list"></i> List
-                                    </button>
-                                    <button id="marketplace-3d-view" class="btn btn-secondary">
-                                        <i class="fas fa-cube"></i> 3D
-                                    </button>
-                                </div>
                             </div>
                             
-                            <!-- 2D Marketplace List -->
+                            <!-- Marketplace List -->
                             <div id="marketplace-list" class="marketplace-list">
                                 <div class="no-data">Click "Load Aircraft" to see available aircraft</div>
-                            </div>
-                            
-                            <!-- 3D Marketplace Gallery -->
-                            <div id="marketplace-3d-gallery" class="marketplace-3d-gallery" style="display: none;">
-                                <div id="marketplace-3d-container" class="aircraft-3d-container">
-                                    <div class="no-data">Load aircraft to see 3D models</div>
-                                </div>
-                                <div id="marketplace-3d-info" class="aircraft-3d-info">
-                                    <h5>Select an aircraft to inspect</h5>
-                                </div>
                             </div>
                         </div>
 
@@ -307,29 +303,9 @@
                         <div id="fleet-tab" class="tab-content">
                             <h4><i class="fas fa-list"></i> Fleet Management</h4>
                             
-                            <!-- View Toggle -->
-                            <div class="view-toggle">
-                                <button id="fleet-2d-view" class="btn btn-secondary active">
-                                    <i class="fas fa-list"></i> List View
-                                </button>
-                                <button id="fleet-3d-view" class="btn btn-secondary">
-                                    <i class="fas fa-cube"></i> 3D Gallery
-                                </button>
-                            </div>
-                            
-                            <!-- 2D Fleet List -->
+                            <!-- Fleet List -->
                             <div id="fleet-list" class="fleet-list">
                                 <div class="no-data">Loading fleet...</div>
-                            </div>
-                            
-                            <!-- 3D Fleet Gallery -->
-                            <div id="fleet-3d-gallery" class="fleet-3d-gallery" style="display: none;">
-                                <div id="fleet-3d-container" class="aircraft-3d-container">
-                                    <div class="no-data">Switch to 3D view to see your aircraft models</div>
-                                </div>
-                                <div id="fleet-3d-info" class="aircraft-3d-info">
-                                    <h5>Select an aircraft to view details</h5>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -340,17 +316,363 @@
         <!-- Legend -->
         <div class="legend">
             <h4>Legend</h4>
-            <div class="legend-item">
-                <i class="fas fa-circle" style="color: #3388ff;"></i> Airports
+            <div class="legend-section">
+                <div class="legend-item">
+                    <i class="fas fa-circle" style="color: #3388ff;"></i> Airports
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-plane" style="color: green;"></i> Departing
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-plane" style="color: red;"></i> En Route
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-plane" style="color: orange;"></i> Arriving
+                </div>
             </div>
-            <div class="legend-item">
-                <i class="fas fa-plane" style="color: green;"></i> Departing
+            <div class="legend-section weather-legend">
+                <div class="legend-title">Weather</div>
+                <div class="legend-item">
+                    <i class="fas fa-cloud-rain" style="color: #4A90E2;"></i> Rain
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-bolt" style="color: #FFD700;"></i> Storm
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-snowflake" style="color: #E8F4FD;"></i> Snow
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-smog" style="color: #B0BEC5;"></i> Fog
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-wind" style="color: #FFC107;"></i> Wind
+                </div>
             </div>
-            <div class="legend-item">
-                <i class="fas fa-plane" style="color: red;"></i> En Route
+        </div>
+        
+        <!-- Tutorial Popup -->
+        <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
+            <div class="tutorial-popup">
+                <div class="tutorial-header">
+                    <div class="tutorial-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="tutorial-progress"></div>
+                        </div>
+                        <span class="step-counter" id="step-counter">1 / 8</span>
+                    </div>
+                    <button id="skip-tutorial" class="btn btn-secondary tutorial-skip">
+                        <i class="fas fa-times"></i> Skip Tutorial
+                    </button>
+                </div>
+                
+                <div class="tutorial-content">
+                    <div class="tutorial-step active" data-step="1">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-plane-departure"></i>
+                        </div>
+                        <h2>Welcome to Virtual Airline Management!</h2>
+                        <p>Transform from a startup airline into a global aviation empire. Manage your fleet, optimize routes, and navigate real-world challenges in this comprehensive airline tycoon simulation.</p>
+                        <div class="tutorial-features">
+                            <div class="feature-item">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Buy & lease aircraft</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-route"></i>
+                                <span>Plan profitable routes</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-cloud"></i>
+                                <span>Handle weather challenges</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Maximize profits</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step" data-step="2">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <h2>Understanding the Map</h2>
+                        <p>Your command center shows real-time flight operations across the globe. Here's what you'll see:</p>
+                        <div class="map-legend-tutorial">
+                            <div class="legend-demo">
+                                <div class="legend-row">
+                                    <i class="fas fa-circle" style="color: #3388ff;"></i>
+                                    <span>Major airports worldwide</span>
+                                </div>
+                                <div class="legend-row">
+                                    <i class="fas fa-plane" style="color: green;"></i>
+                                    <span>Departing flights (just took off)</span>
+                                </div>
+                                <div class="legend-row">
+                                    <i class="fas fa-plane" style="color: red;"></i>
+                                    <span>En route flights (cruising)</span>
+                                </div>
+                                <div class="legend-row">
+                                    <i class="fas fa-plane" style="color: orange;"></i>
+                                    <span>Arriving flights (approaching destination)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Click on any aircraft to see detailed flight information and track its progress!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="3">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h2>Building Your Fleet</h2>
+                        <p>Start your airline empire by acquiring aircraft. You have multiple financing options:</p>
+                        <div class="financing-options">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    <h4>Cash Purchase</h4>
+                                </div>
+                                <p>Buy aircraft outright for immediate ownership</p>
+                                <ul>
+                                    <li>No monthly payments</li>
+                                    <li>Full ownership benefits</li>
+                                    <li>Higher upfront cost</li>
+                                </ul>
+                            </div>
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-handshake"></i>
+                                    <h4>Lease Agreement</h4>
+                                </div>
+                                <p>Lease aircraft with lower initial investment</p>
+                                <ul>
+                                    <li>Lower upfront cost</li>
+                                    <li>Monthly lease payments</li>
+                                    <li>Flexible fleet management</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Start with leasing to preserve cash, then buy aircraft as profits grow!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="4">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <h2>Route Planning & Economics</h2>
+                        <p>Profitable routes are the heart of your airline. The route system analyzes:</p>
+                        <div class="economics-breakdown">
+                            <div class="metric-group">
+                                <h4><i class="fas fa-coins"></i> Revenue Factors</h4>
+                                <ul>
+                                    <li>Passenger demand between cities</li>
+                                    <li>Ticket pricing (Economy & Business)</li>
+                                    <li>Flight frequency per week</li>
+                                    <li>Aircraft capacity utilization</li>
+                                </ul>
+                            </div>
+                            <div class="metric-group">
+                                <h4><i class="fas fa-calculator"></i> Operating Costs</h4>
+                                <ul>
+                                    <li>Fuel consumption & prices</li>
+                                    <li>Crew salaries & training</li>
+                                    <li>Airport fees & taxes</li>
+                                    <li>Aircraft maintenance</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Goal:</strong> Aim for routes with >15% profit margin for sustainable growth!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="5">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-cloud-rain"></i>
+                        </div>
+                        <h2>Weather Challenges</h2>
+                        <p>Real-world weather adds unpredictability to your operations. Monitor these conditions:</p>
+                        <div class="weather-types">
+                            <div class="weather-item">
+                                <i class="fas fa-cloud-rain" style="color: #4A90E2;"></i>
+                                <div>
+                                    <strong>Rain</strong>
+                                    <p>Moderate impact on visibility and landing conditions</p>
+                                </div>
+                            </div>
+                            <div class="weather-item">
+                                <i class="fas fa-bolt" style="color: #FFD700;"></i>
+                                <div>
+                                    <strong>Storms</strong>
+                                    <p>Severe weather may force diversions and delays</p>
+                                </div>
+                            </div>
+                            <div class="weather-item">
+                                <i class="fas fa-smog" style="color: #B0BEC5;"></i>
+                                <div>
+                                    <strong>Fog</strong>
+                                    <p>Reduces visibility, may cause approach delays</p>
+                                </div>
+                            </div>
+                            <div class="weather-item">
+                                <i class="fas fa-wind" style="color: #FFC107;"></i>
+                                <div>
+                                    <strong>Strong Winds</strong>
+                                    <p>Creates turbulence, affects fuel efficiency</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Weather changes every 2-5 minutes, plan flexible operations!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="6">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h2>Control Panel Overview</h2>
+                        <p>Master the control panel at the top of your screen for efficient management:</p>
+                        <div class="controls-demo">
+                            <div class="control-item">
+                                <i class="fas fa-fast-forward"></i>
+                                <div>
+                                    <strong>Time Speed</strong>
+                                    <p>Accelerate time up to 20x for faster simulation</p>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <i class="fas fa-dollar-sign"></i>
+                                <div>
+                                    <strong>Cash Balance</strong>
+                                    <p>Monitor your available funds for purchases</p>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <i class="fas fa-chart-line"></i>
+                                <div>
+                                    <strong>Monthly P&L</strong>
+                                    <p>Track your airline's profitability</p>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <i class="fas fa-route"></i>
+                                <div>
+                                    <strong>Routes Toggle</strong>
+                                    <p>Show/hide route projection lines</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tutorial-step" data-step="7">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <h2>3D Flight Tracking</h2>
+                        <p>Experience immersive flight tracking with our 3D flight mode:</p>
+                        <div class="feature-showcase">
+                            <div class="showcase-item">
+                                <i class="fas fa-globe"></i>
+                                <div>
+                                    <strong>3D Terrain View</strong>
+                                    <p>See flights navigate over realistic 3D landscapes</p>
+                                </div>
+                            </div>
+                            <div class="showcase-item">
+                                <i class="fas fa-plane"></i>
+                                <div>
+                                    <strong>Aircraft Models</strong>
+                                    <p>Detailed 3D aircraft models with real-time positioning</p>
+                                </div>
+                            </div>
+                            <div class="showcase-item">
+                                <i class="fas fa-mouse-pointer"></i>
+                                <div>
+                                    <strong>Interactive Control</strong>
+                                    <p>Click flights to follow and track their progress</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Access:</strong> Click "3D Flight Mode" button when flights are active!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="8">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h2>Ready for Takeoff!</h2>
+                        <p>You're now equipped to build your aviation empire. Here's your roadmap to success:</p>
+                        <div class="success-roadmap">
+                            <div class="roadmap-step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <strong>Start Small</strong>
+                                    <p>Lease your first aircraft and establish a profitable short-haul route</p>
+                                </div>
+                            </div>
+                            <div class="roadmap-step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <strong>Optimize Operations</strong>
+                                    <p>Monitor route performance and adjust pricing for maximum profitability</p>
+                                </div>
+                            </div>
+                            <div class="roadmap-step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <strong>Expand Network</strong>
+                                    <p>Add more aircraft and routes as your cash flow improves</p>
+                                </div>
+                            </div>
+                            <div class="roadmap-step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <strong>Dominate Markets</strong>
+                                    <p>Build a global network and become the world's leading airline!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="final-tips">
+                            <h4><i class="fas fa-star"></i> Pro Tips</h4>
+                            <ul>
+                                <li>Monitor weather impacts on your routes</li>
+                                <li>Balance short-haul frequency with long-haul profitability</li>
+                                <li>Use the 3D mode to showcase your growing fleet</li>
+                                <li>Check the Economics tab regularly for performance insights</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tutorial-navigation">
+                    <button id="tutorial-prev" class="btn btn-secondary" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button id="tutorial-next" class="btn btn-primary">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button id="tutorial-finish" class="btn btn-success" style="display: none;">
+                        <i class="fas fa-rocket"></i> Start Managing Your Airline!
+                    </button>
+                </div>
             </div>
-            <div class="legend-item">
-                <i class="fas fa-plane" style="color: orange;"></i> Arriving
+        </div>
+
+        <!-- Large 3D Model Popup -->
+        <div id="large-3d-popup" class="large-3d-popup" style="display: none;">
+            <div class="large-3d-content">
+                <div class="large-3d-header">
+                    <h3 id="large-3d-title">Aircraft 3D View</h3>
+                    <button id="close-large-3d" class="btn btn-danger">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="large-3d-container" class="large-3d-container">
+                    <div class="loading-indicator">
+                        <i class="fas fa-spinner fa-spin"></i> Loading 3D model...
+                    </div>
+                </div>
+                <div id="large-3d-info" class="large-3d-info">
+                    <p>Loading aircraft information...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -358,10 +680,13 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="{{ url_for('static', filename='js/aircraft3d.js') }}"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js"></script>
+    
+    <!-- MapTiler SDK and 3D Support -->
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.umd.min.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-3d/v2.0.2/maptiler-3d.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19"></script>
+    
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

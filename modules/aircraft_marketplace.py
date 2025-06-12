@@ -88,66 +88,12 @@ class AircraftDatabase:
     """Manages aircraft specifications and market data"""
     
     def __init__(self):
-        # Real-world aircraft specifications
+        # Aircraft specifications - only 4 models we have GLB files for
         self.aircraft_specs = {
-            # Regional Aircraft
-            "ATR 72-600": AircraftSpec(
-                "ATR 72-600", "ATR", AircraftCategory.REGIONAL, 78, 7.5, 825, 276,
-                1273, 210, 23, 4265, 23.0, 2.5, 2, 2010
-            ),
-            "Embraer E175": AircraftSpec(
-                "Embraer E175", "Embraer", AircraftCategory.REGIONAL, 88, 10.2, 2200, 460,
-                2590, 320, 38.7, 6200, 53.0, 2.8, 2, 2004
-            ),
-            "CRJ-900": AircraftSpec(
-                "CRJ-900", "Bombardier", AircraftCategory.REGIONAL, 90, 11.3, 1553, 470,
-                2070, 340, 38.3, 5500, 47.0, 3.0, 2, 2003
-            ),
-            
-            # Narrow Body
-            "A320neo": AircraftSpec(
-                "A320neo", "Airbus", AircraftCategory.NARROW_BODY, 180, 24.4, 3500, 454,
-                6400, 650, 79, 7400, 110.0, 2.2, 2, 2016
-            ),
-            "A321XLR": AircraftSpec(
-                "A321XLR", "Airbus", AircraftCategory.NARROW_BODY, 220, 32.9, 4700, 454,
-                8700, 750, 97, 8200, 142.0, 2.3, 2, 2023
-            ),
-            "B737 MAX 8": AircraftSpec(
-                "B737 MAX 8", "Boeing", AircraftCategory.NARROW_BODY, 178, 23.7, 3550, 453,
-                6875, 680, 79, 7800, 117.0, 2.4, 2, 2017
-            ),
-            "B737-800": AircraftSpec(
-                "B737-800", "Boeing", AircraftCategory.NARROW_BODY, 162, 21.1, 2935, 447,
-                6875, 720, 79, 7800, 89.0, 2.6, 2, 1998
-            ),
-            
-            # Wide Body
-            "A330-900neo": AircraftSpec(
-                "A330-900neo", "Airbus", AircraftCategory.WIDE_BODY, 287, 61.9, 7200, 470,
-                36740, 1850, 242, 9200, 296.0, 2.0, 2, 2018
-            ),
-            "A350-900": AircraftSpec(
-                "A350-900", "Airbus", AircraftCategory.WIDE_BODY, 315, 69.4, 8100, 488,
-                37464, 1900, 280, 9000, 317.0, 1.8, 2, 2015
-            ),
-            "B777-300ER": AircraftSpec(
-                "B777-300ER", "Boeing", AircraftCategory.WIDE_BODY, 396, 84.4, 7370, 490,
-                47890, 2400, 351, 10400, 375.0, 2.2, 2, 2004
-            ),
-            "B787-9": AircraftSpec(
-                "B787-9", "Boeing", AircraftCategory.WIDE_BODY, 290, 61.0, 7635, 488,
-                33384, 1700, 254, 8400, 292.0, 1.9, 2, 2014
-            ),
-            
-            # Cargo
-            "B777F": AircraftSpec(
-                "B777F", "Boeing", AircraftCategory.CARGO, 0, 103, 4970, 490,
-                47890, 2400, 347, 10400, 352.0, 2.5, 2, 2009
-            ),
-            "A330-200F": AircraftSpec(
-                "A330-200F", "Airbus", AircraftCategory.CARGO, 0, 70, 4000, 470,
-                36740, 1850, 233, 8500, 241.0, 2.3, 2, 2010
+            # Only A321 available
+            "A321": AircraftSpec(
+                "A321", "Airbus", AircraftCategory.NARROW_BODY, 220, 32.9, 3200, 454,
+                8700, 750, 97, 8200, 142.0, 2.3, 2, 1994
             )
         }
 
@@ -553,7 +499,8 @@ class AircraftMarketplace:
             json.dumps({
                 "financing_type": financing_type.value,
                 "monthly_payment": monthly_payment,
-                "down_payment": down_payment
+                "down_payment": down_payment,
+                "condition": owned_aircraft.condition.value
             })
         ))
         

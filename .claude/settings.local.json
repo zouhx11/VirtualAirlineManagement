@@ -31,7 +31,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(mkdir:*)",
       "Bash(find:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(wget:*)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:docs.maptiler.com)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

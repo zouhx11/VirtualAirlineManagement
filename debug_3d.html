@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Debug 3D Aircraft</title>
+<script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.umd.min.js"></script>
+<link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.css" rel="stylesheet" />
+<script src="https://cdn.maptiler.com/maptiler-3d/v2.0.2/maptiler-3d.umd.min.js"></script>
+<style>
+  body {margin: 0; padding: 0; font-family: Arial;}
+  #map {position: absolute; top: 0; bottom: 100px; width: 100%;}
+  #debug {position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: #333; color: white; padding: 10px; overflow-y: auto;}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="debug">
+  <h3>Debug Log:</h3>
+  <div id="log"></div>
+</div>
+
+<script>
+function log(message) {
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+  logDiv.scrollTop = logDiv.scrollHeight;
+  console.log(message);
+}
+
+try {
+  log('Starting 3D aircraft test...');
+  
+  // Check if SDKs are loaded
+  log('MapTiler SDK: ' + (typeof maptilersdk !== 'undefined' ? 'LOADED' : 'NOT LOADED'));
+  log('MapTiler 3D SDK: ' + (typeof maptiler3d !== 'undefined' ? 'LOADED' : 'NOT LOADED'));
+  
+  if (typeof maptilersdk === 'undefined') {
+    log('ERROR: MapTiler SDK failed to load!');
+    throw new Error('MapTiler SDK not loaded');
+  }
+  
+  if (typeof maptiler3d === 'undefined') {
+    log('ERROR: MapTiler 3D SDK failed to load!');
+    throw new Error('MapTiler 3D SDK not loaded');
+  }
+  
+  // Set API key
+  maptilersdk.config.apiKey = 'icLNtmi1FuvbINsiGgdt';
+  log('API key set');
+  
+  const paris = [2.3120283730734648, 48.8556923989924];
+  log('Creating map at Paris: ' + JSON.stringify(paris));
+  
+  const map = new maptilersdk.Map({
+    container: document.getElementById('map'),
+    style: maptilersdk.MapStyle.STREETS.DARK,
+    zoom: 9,
+    center: paris,
+    maxPitch: 85,
+    terrainControl: true,
+    terrain: true,
+    terrainExaggeration: 0.001,
+    maptilerLogo: true,
+  });
+  
+  log('Map created, waiting for ready...');
+  
+  map.onReadyAsync().then(() => {
+    log('Map ready! Adding 3D layer...');
+    
+    const layer3D = new maptiler3d.Layer3D("aircraft-3d-layer");
+    map.addLayer(layer3D);
+    log('3D layer added');
+    
+    // Configure lighting
+    layer3D.setAmbientLight({intensity: 2});
+    layer3D.addPointLight("point-light", {intensity: 30});
+    log('Lighting configured');
+    
+    // Add aircraft using local model
+    log('Loading local aircraft model...');
+    return layer3D.addMeshFromURL(
+      "test-plane",
+      "/static/models/aircraft/a321.glb",
+      {
+        lngLat: paris,
+        heading: 12,
+        scale: 200, // Huge scale for maximum visibility
+        altitude: 5000,
+        altitudeReference: maptiler3d.AltitudeReference.MEAN_SEA_LEVEL,
+      }
+    );
+  }).then(() => {
+    log('✅ SUCCESS! Aircraft should be visible now!');
+    log('If you dont see it, zoom out or check your API key');
+  }).catch((error) => {
+    log('❌ ERROR: ' + error.message);
+    log('Full error: ' + JSON.stringify(error));
+  });
+
+} catch (error) {
+  log('❌ INITIALIZATION ERROR: ' + error.message);
+}
+</script>
+</body>
+</html>

@@ -190,7 +190,7 @@ def create_initial_database(db_path: str):
             CREATE TABLE IF NOT EXISTS airline_finances (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT NOT NULL,
-                cash_balance REAL DEFAULT 100000000,
+                cash_balance REAL DEFAULT 100000000000,
                 revenue REAL DEFAULT 0,
                 expenses REAL DEFAULT 0,
                 profit_loss REAL DEFAULT 0,
@@ -267,7 +267,7 @@ def create_initial_database(db_path: str):
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             datetime.now().isoformat(),
-            100000000,  # $100M starting cash
+            100000000000,  # $100B starting cash
             0, 0, 0,
             "Initial airline setup"
         ))
@@ -353,10 +353,10 @@ def main():
     print("==========================================\n")
     
     # Check if we're in the right directory
-    if not os.path.exists("main.py"):
-        print("❌ Error: main.py not found!")
+    if not os.path.exists("flask_app.py"):
+        print("❌ Error: flask_app.py not found!")
         print("   Please run this script from the VirtualAirlineManagement root directory")
-        print("   (the same directory that contains main.py)")
+        print("   (the same directory that contains flask_app.py)")
         sys.exit(1)
     
     try:
@@ -379,11 +379,11 @@ def main():
         print("\n🎉 Setup completed successfully!")
         print("\n📋 Next Steps:")
         print("1. Update config.ini with your FlightAware API credentials (optional)")
-        print("2. Run: python main.py")
+        print("2. Run: uv run python flask_app.py")
         print("3. Check out the new 'Aircraft Market' and 'My Fleet' tabs")
         print("4. Start by browsing and purchasing your first aircraft!")
         
-        print(f"\n💰 Starting Cash: $100M")
+        print(f"\n💰 Starting Cash: $100B")
         print(f"🛩️  Available Aircraft: Check the marketplace")
         print(f"👨‍✈️ Sample Pilots: 4 pilots ready for duty")
         

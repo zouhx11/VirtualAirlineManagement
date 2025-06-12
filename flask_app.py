@@ -230,25 +230,85 @@ def api_marketplace():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/owned_aircraft')
+def api_owned_aircraft():
+    """Get owned aircraft data"""
+    try:
+        owned_aircraft = aircraft_marketplace.get_owned_aircraft()
+        aircraft_data = []
+        for aircraft in owned_aircraft:
+            aircraft_data.append({
+                'id': aircraft.id,
+                'model': aircraft.spec.model,
+                'registration': aircraft.id,
+                'airframeIcao': aircraft.spec.model,
+                'location': aircraft.location,
+                'condition': aircraft.condition.value,
+                'age_years': aircraft.age_years,
+                'purchase_price': aircraft.purchase_price,
+                'current_value': aircraft.current_value,
+                'financing_type': aircraft.financing_type.value,
+                'monthly_payment': aircraft.monthly_payment / 1000,  # Convert to thousands
+                'status': 'Active'
+            })
+        return jsonify(aircraft_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/purchase', methods=['POST'])
 def api_purchase():
     """Purchase aircraft"""
     try:
         data = request.get_json()
+        print(f"🛒 Purchase request received: {data}")
+        
         aircraft_id = data.get('aircraft_id')
         financing_type = data.get('financing_type', 'CASH')
         
+        print(f"🛩️ Attempting to purchase aircraft {aircraft_id} with {financing_type}")
+        
+        # Check if FinancingType enum value exists
+        try:
+            financing_enum = FinancingType[financing_type]
+        except KeyError:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid financing type: {financing_type}'
+            })
+        
         success, message, owned = aircraft_marketplace.purchase_aircraft(
-            aircraft_id, FinancingType[financing_type]
+            aircraft_id, financing_enum
         )
+        
+        print(f"💰 Purchase result: success={success}, message='{message}'")
+        
+        aircraft_data = None
+        if owned:
+            aircraft_data = {
+                'id': owned.id,
+                'model': owned.spec.model,
+                'condition': owned.condition.value,
+                'age_years': owned.age_years,
+                'purchase_price': owned.purchase_price,
+                'current_value': owned.current_value,
+                'financing_type': owned.financing_type.value,
+                'monthly_payment': owned.monthly_payment,
+                'location': owned.location
+            }
         
         return jsonify({
             'success': success,
             'message': message,
-            'aircraft': owned.__dict__ if owned else None
+            'aircraft': aircraft_data
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Purchase API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Purchase failed: {str(e)}'
+        })
 
 @app.route('/api/assign_route', methods=['POST'])
 def api_assign_route():
@@ -335,7 +395,7 @@ def api_economics():
                 )
                 
                 route_revenue = analysis['revenue']['monthly_revenue']
-                route_costs = analysis['costs']['total_monthly_cost']
+                route_costs = analysis['costs']['monthly_total']
                 route_profit = analysis['profitability']['monthly_profit']
                 
                 monthly_revenue += route_revenue

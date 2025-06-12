@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Test Local A321 Model</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js"></script>
+<style>
+  body {margin: 0; padding: 20px; font-family: Arial;}
+  model-viewer {width: 100%; height: 400px; background: #333;}
+  #info {margin-top: 20px; padding: 20px; background: #f0f0f0; border-radius: 5px;}
+</style>
+</head>
+<body>
+<h1>Test Local A321 Model</h1>
+<p>This tests if our local A321.glb model file is accessible:</p>
+
+<model-viewer 
+  src="/static/models/aircraft/a321.glb"
+  alt="A321 Aircraft Model"
+  auto-rotate 
+  camera-controls 
+  background-color="#333333">
+</model-viewer>
+
+<div id="info">
+  <h3>Model Test Results:</h3>
+  <p id="status">Loading model...</p>
+  <p><strong>Expected:</strong> You should see a 3D A321 aircraft above</p>
+  <p><strong>If it fails:</strong> The Flask app might not be serving the model file correctly</p>
+</div>
+
+<script>
+const modelViewer = document.querySelector('model-viewer');
+const status = document.getElementById('status');
+
+modelViewer.addEventListener('load', () => {
+  status.textContent = '✅ SUCCESS! Local A321 model loaded correctly';
+  status.style.color = 'green';
+});
+
+modelViewer.addEventListener('error', (event) => {
+  status.textContent = '❌ ERROR: Failed to load local A321 model - ' + event.detail;
+  status.style.color = 'red';
+});
+
+// Timeout test
+setTimeout(() => {
+  if (status.textContent === 'Loading model...') {
+    status.textContent = '⏰ TIMEOUT: Model took too long to load';
+    status.style.color = 'orange';
+  }
+}, 10000);
+</script>
+</body>
+</html>
