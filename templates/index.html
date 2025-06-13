@@ -25,10 +25,12 @@
                 <label for="time-speed">⚡ Speed:</label>
                 <select id="time-speed">
                     <option value="1">1x Normal</option>
-                    <option value="2">2x Fast</option>
-                    <option value="5">5x Very Fast</option>
-                    <option value="10">10x Ultra Fast</option>
-                    <option value="20">20x Hyper Speed</option>
+                    <option value="5">5x Fast</option>
+                    <option value="10">10x Very Fast</option>
+                    <option value="20">20x Ultra Fast</option>
+                    <option value="50">50x Hyper Speed</option>
+                    <option value="100">100x LUDICROUS Speed</option>
+                    <option value="200">200x PLAID Speed</option>
                 </select>
             </div>
             
@@ -70,6 +72,7 @@
                 </button>
             </div>
             
+            
             <div class="control-group">
                 <button id="help-tutorial" class="btn btn-secondary">
                     <i class="fas fa-question-circle"></i> Help
@@ -86,8 +89,14 @@
                     <button id="toggle-3d-flight" class="btn btn-secondary">
                         <i class="fas fa-cube"></i> 3D Flight Mode
                     </button>
+                    <button id="toggle-globe-mode" class="btn btn-secondary">
+                        <i class="fas fa-globe"></i> Globe Flight Mode
+                    </button>
                     <button id="toggle-2d-map" class="btn btn-secondary active" style="display: none;">
                         <i class="fas fa-map"></i> 2D Map
+                    </button>
+                    <button id="toggle-free-camera" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-video"></i> Free Camera
                     </button>
                 </div>
             </div>
@@ -103,6 +112,21 @@
                 <div class="flight-3d-exit">
                     <button id="exit-3d-mode" class="btn btn-danger">
                         <i class="fas fa-times"></i> Exit 3D Mode
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Globe Flight Mode Viewer -->
+            <div id="globe-flight-viewer" class="globe-flight-viewer" style="display: none;">
+                <div id="globe-flight-container" class="globe-flight-container">
+                    <div class="globe-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading Globe Flight Mode...
+                    </div>
+                </div>
+                <!-- Globe Exit Button -->
+                <div class="globe-exit">
+                    <button id="exit-globe-mode" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Exit Globe Mode
                     </button>
                 </div>
             </div>
@@ -156,6 +180,9 @@
                         <!-- Flights Tab -->
                         <div id="flights-tab" class="tab-content active">
                             <h4><i class="fas fa-plane"></i> Active Flights</h4>
+                            <div class="camera-control-info">
+                                <p><i class="fas fa-info-circle"></i> <strong>Camera Control:</strong> Click any flight below to lock camera to that aircraft. Click again to unlock (free camera).</p>
+                            </div>
                             <div id="flights-list" class="flights-list">
                                 <div class="no-data">No active flights</div>
                             </div>
@@ -240,6 +267,14 @@
                         <!-- Routes Tab -->
                         <div id="routes-tab" class="tab-content">
                             <h4><i class="fas fa-route"></i> Route Assignment</h4>
+                            
+                            <!-- Aircraft Sync Button -->
+                            <div class="sync-section">
+                                <button id="sync-aircraft" class="btn btn-primary">
+                                    <i class="fas fa-sync"></i> Sync Aircraft Fleet
+                                </button>
+                                <p class="sync-info">Sync your owned aircraft to the fleet for route assignments</p>
+                            </div>
                             <div class="route-assignment">
                                 <div class="form-row">
                                     <div class="form-group">
@@ -297,6 +332,14 @@
                                     <i class="fas fa-link"></i> Assign Route
                                 </button>
                             </div>
+                            
+                            <!-- Existing Route Assignments -->
+                            <div class="existing-assignments">
+                                <h5><i class="fas fa-list"></i> Current Route Assignments</h5>
+                                <div id="assignments-list" class="assignments-list">
+                                    <div class="no-data">No route assignments yet</div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Fleet Tab -->
@@ -328,6 +371,9 @@
                 </div>
                 <div class="legend-item">
                     <i class="fas fa-plane" style="color: orange;"></i> Arriving
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-parking" style="color: #FFC107;"></i> Parked
                 </div>
             </div>
             <div class="legend-section weather-legend">

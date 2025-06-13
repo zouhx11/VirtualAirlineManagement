@@ -34,6 +34,8 @@ aircraft_marketplace = AircraftMarketplace(db_path)
 
 # Time speed multiplier (global setting)
 time_speed = 1.0
+# Reference time for consistent calculations
+reference_time = time.time()  # Fixed reference point
 
 # Airport coordinates
 AIRPORTS = {
@@ -107,8 +109,14 @@ def load_assignments():
         return []
 
 def generate_active_flights(assignments, time_multiplier=1.0):
-    """Generate real-time moving flights based on assignments"""
-    current_time = time.time() * time_multiplier
+    """Generate real-time moving flights - ONE AIRCRAFT = ONE FLIGHT AT A TIME"""
+    # Use global reference time for consistent calculations
+    global reference_time
+    real_time = time.time()
+    # Calculate accelerated time based on our reference point
+    elapsed_real_time = real_time - reference_time
+    accelerated_elapsed_time = elapsed_real_time * time_multiplier
+    current_time = reference_time + accelerated_elapsed_time
     active_flights = []
     
     for assignment in assignments:
@@ -121,61 +129,172 @@ def generate_active_flights(assignments, time_multiplier=1.0):
         dep_lat, dep_lon = dep_airport['lat'], dep_airport['lon']
         arr_lat, arr_lon = arr_airport['lat'], arr_airport['lon']
         
-        # Calculate flight time based on distance
+        # Calculate flight time based on distance (ULTRA fast game pace)
         distance = math.sqrt((arr_lat - dep_lat)**2 + (arr_lon - dep_lon)**2)
-        flight_time_hours = (distance * 60) / time_multiplier  # Faster flights with higher speed
+        flight_time_hours = max(0.005, distance * 0.02)  # ULTRA fast - flights in seconds!
         
-        # Generate multiple flights per route based on frequency
-        flights_per_day = assignment['frequency_weekly'] / 7
-        for flight_num in range(int(flights_per_day) + 1):
-            # Each flight starts at different times throughout the day
-            flight_start_offset = (flight_num * 24 * 60) / flights_per_day  # minutes
+        # Rest time between flights (visible parking period)
+        rest_time_hours = 0.01  # About 36 seconds rest between flights for visible parking
+        total_cycle_time = flight_time_hours + rest_time_hours
+        
+        # Calculate round-trip cycles (continuous operation)
+        frequency = assignment['frequency_weekly']
+        # One complete round trip = outbound flight + rest + return flight + rest
+        round_trip_duration_hours = (flight_time_hours + rest_time_hours) * 2
+        
+        # Current position in the round-trip cycle
+        current_cycle_time = (current_time / 3600) % round_trip_duration_hours  # Convert to hours
+        
+        # Debug info (reduced frequency to avoid spam)
+        if assignment == assignments[0] and int(current_time) % 10 == 0:  # Every 10 seconds only
+            print(f"🔍 Debug - Aircraft {assignment['aircraft_id']}: cycle_time={current_cycle_time:.3f}h, flight_time={flight_time_hours:.3f}h, round_trip={round_trip_duration_hours:.3f}h, speed={time_multiplier}x")
+        
+        # Determine current phase of round trip
+        first_leg_end = flight_time_hours  # End of outbound flight
+        first_rest_end = first_leg_end + rest_time_hours  # End of first rest
+        second_leg_end = first_rest_end + flight_time_hours  # End of return flight
+        # second_rest_end = second_leg_end + rest_time_hours  # End of second rest (cycle repeats)
+        
+        if current_cycle_time < first_leg_end:
+            # OUTBOUND FLIGHT: dep_airport → arr_airport
+            raw_progress = current_cycle_time / flight_time_hours
             
-            # Calculate current flight progress (0-1)
-            time_cycle = (current_time + flight_start_offset * 60) % (flight_time_hours * 60)
-            progress = (time_cycle / (flight_time_hours * 60)) % 1.0
-            
-            # Calculate current position
+            # 🛬 SLOW DOWN LANDING: When close to ground (>90%), reduce progress speed by 50%
+            if raw_progress >= 0.90:
+                # Create slower landing phase - map 0.90-1.0 to 0.90-1.0 but with 50% speed
+                landing_phase = (raw_progress - 0.90) / 0.10  # 0.0 to 1.0 during landing
+                slowed_landing = landing_phase * 0.5  # Slow down by 50%
+                progress = 0.90 + (slowed_landing * 0.10)  # Map back to 0.90-1.0 range
+                if progress > 1.0:  # Cap at 100%
+                    progress = 1.0
+                print(f"🛬 SLOW LANDING: Aircraft {assignment['aircraft_id']} - raw: {raw_progress:.3f} → slowed: {progress:.3f}")
+            else:
+                progress = raw_progress
+                
             flight_lat = dep_lat + (arr_lat - dep_lat) * progress
             flight_lon = dep_lon + (arr_lon - dep_lon) * progress
             
-            # Calculate heading (bearing)
             lat_diff = arr_lat - dep_lat
             lon_diff = arr_lon - dep_lon
-            heading = math.degrees(math.atan2(lon_diff, lat_diff))
-            if heading < 0:
-                heading += 360
+            route_direction = f"{assignment['departure_airport']} → {assignment['arrival_airport']}"
+            current_dep = assignment['departure_airport']
+            current_arr = assignment['arrival_airport']
+            is_return_flight = False
             
-            # Determine flight status
-            if progress <= 0.05:
-                status = 'departing'
-                color = 'green'
-            elif progress >= 0.95:
-                status = 'arriving'
-                color = 'orange'
+        elif current_cycle_time < first_rest_end:
+            # 🅿️ RESTING AT ARRIVAL AIRPORT - aircraft parked on ground
+            flight_lat = arr_lat  # Parked at arrival airport
+            flight_lon = arr_lon
+            
+            lat_diff = 0  # No movement while parked
+            lon_diff = 0
+            route_direction = f"PARKED at {assignment['arrival_airport']}"
+            current_dep = assignment['arrival_airport']  # Currently at arrival airport
+            current_arr = assignment['departure_airport']  # Next destination is departure airport  
+            is_return_flight = False
+            progress = 0  # 0% progress while resting
+            
+        elif current_cycle_time < second_leg_end:
+            # RETURN FLIGHT: arr_airport → dep_airport  
+            flight_progress_time = current_cycle_time - first_rest_end
+            raw_progress = flight_progress_time / flight_time_hours
+            
+            # 🛬 SLOW DOWN LANDING: When close to ground (>90%), reduce progress speed by 50%
+            if raw_progress >= 0.90:
+                # Create slower landing phase - map 0.90-1.0 to 0.90-1.0 but with 50% speed
+                landing_phase = (raw_progress - 0.90) / 0.10  # 0.0 to 1.0 during landing
+                slowed_landing = landing_phase * 0.5  # Slow down by 50%
+                progress = 0.90 + (slowed_landing * 0.10)  # Map back to 0.90-1.0 range
+                if progress > 1.0:  # Cap at 100%
+                    progress = 1.0
+                print(f"🛬 SLOW LANDING: Aircraft {assignment['aircraft_id']} - raw: {raw_progress:.3f} → slowed: {progress:.3f}")
             else:
-                status = 'en_route'
-                color = 'red'
+                progress = raw_progress
+                
+            flight_lat = arr_lat + (dep_lat - arr_lat) * progress
+            flight_lon = arr_lon + (dep_lon - arr_lon) * progress
             
-            flight_name = f"Flight {assignment['aircraft_id']}-{flight_num}"
+            lat_diff = dep_lat - arr_lat
+            lon_diff = dep_lon - arr_lon
+            route_direction = f"{assignment['arrival_airport']} → {assignment['departure_airport']}"
+            current_dep = assignment['arrival_airport']
+            current_arr = assignment['departure_airport']
+            is_return_flight = True
             
-            active_flights.append({
-                'id': f"{assignment['aircraft_id']}-{flight_num}",
-                'name': flight_name,
-                'lat': flight_lat,
-                'lon': flight_lon,
-                'heading': heading,
-                'aircraft_id': assignment['aircraft_id'],
-                'route': f"{assignment['departure_airport']} → {assignment['arrival_airport']}",
-                'progress': progress * 100,
-                'dep_airport': assignment['departure_airport'],
-                'arr_airport': assignment['arrival_airport'],
-                'status': status,
-                'color': color,
-                'speed': f"{time_multiplier}x",
-                'altitude': 35000,  # Simulated
-                'ground_speed': 450 + (progress * 50)  # Simulated varying speed
-            })
+        else:
+            # 🅿️ RESTING AT DEPARTURE AIRPORT - aircraft parked on ground
+            flight_lat = dep_lat  # Parked at departure airport
+            flight_lon = dep_lon
+            
+            lat_diff = 0  # No movement while parked
+            lon_diff = 0
+            route_direction = f"PARKED at {assignment['departure_airport']}"
+            current_dep = assignment['departure_airport']  # Currently at departure airport
+            current_arr = assignment['arrival_airport']   # Next destination is arrival airport
+            is_return_flight = False
+            progress = 0  # 0% progress while resting
+            
+        # Calculate heading for the current flight
+        heading = math.degrees(math.atan2(lon_diff, lat_diff))
+        if heading < 0:
+            heading += 360
+        
+        # Calculate realistic altitude based on flight phase
+        cruise_altitude = 35000  # Cruise altitude in feet
+        
+        if progress == 0:
+            # 🅿️ PARKED PHASE: Aircraft is resting at airport on ground
+            altitude = 0  # On the ground at airport
+            status = 'parked'
+            color = '#FFC107'  # Yellow/gold for parked aircraft
+        elif progress <= 0.05:
+            # TAKEOFF PHASE: Climb from 0 to cruise altitude
+            takeoff_progress = progress / 0.05  # 0 to 1 during takeoff
+            altitude = int(takeoff_progress * cruise_altitude)
+            status = 'departing'
+            color = 'green'
+        elif progress >= 0.90:
+            # LANDING PHASE: Descend from cruise altitude to 0 (extended phase for better viewing)
+            landing_progress = (1.0 - progress) / 0.10  # 1 to 0 during extended landing phase
+            altitude = int(landing_progress * cruise_altitude)
+            status = 'arriving'
+            color = 'orange'
+        else:
+            # CRUISE PHASE: Maintain cruise altitude
+            altitude = cruise_altitude
+            status = 'en_route'
+            color = 'red'
+        
+        flight_name = f"Flight {assignment['aircraft_id']}"
+        
+        active_flights.append({
+            'id': f"{assignment['aircraft_id']}",
+            'name': flight_name,
+            'lat': flight_lat,
+            'lon': flight_lon,
+            'heading': heading,
+            'aircraft_id': assignment['aircraft_id'],
+            'route': route_direction,
+            'progress': progress * 100,
+            'dep_airport': current_dep,
+            'arr_airport': current_arr,
+            'status': status,
+            'color': color,
+            'speed': f"{time_multiplier}x",
+            'altitude': altitude,  # Realistic altitude based on flight phase
+            'altitude_meters': altitude * 0.3048,  # Convert feet to meters for 3D globe
+            'ground_speed': 450 + (progress * 50),  # Simulated varying speed
+            'is_return_flight': is_return_flight,
+            'cycle_time_remaining': round_trip_duration_hours - current_cycle_time,
+            'rest_time_remaining': 0,
+            'debug_info': {
+                'current_cycle_time': current_cycle_time,
+                'flight_time_hours': flight_time_hours,
+                'round_trip_duration_hours': round_trip_duration_hours,
+                'time_multiplier': time_multiplier,
+                'phase': 'outbound' if not is_return_flight else 'return'
+            }
+        })
     
     return active_flights
 
@@ -312,7 +431,7 @@ def api_purchase():
 
 @app.route('/api/assign_route', methods=['POST'])
 def api_assign_route():
-    """Assign aircraft to route"""
+    """Assign aircraft to route with proper validation"""
     try:
         data = request.get_json()
         route_id = data.get('route_id')
@@ -321,19 +440,231 @@ def api_assign_route():
         economy_fare = data.get('economy_fare', 250)
         business_fare = data.get('business_fare', 875)
         
-        departure_times = ["08:00"] * min(frequency, 7)
+        print(f"🛩️ Route assignment request: Aircraft {aircraft_id} -> Route {route_id}")
+        
+        with sqlite3.connect(db_path) as conn:
+            # Check if aircraft is already assigned to an active route
+            check_query = """
+                SELECT route_id, departure_airport, arrival_airport 
+                FROM route_assignments ra
+                JOIN routes r ON ra.route_id = r.id
+                WHERE ra.aircraft_id = ? AND ra.active = 1
+            """
+            existing = conn.execute(check_query, (str(aircraft_id),)).fetchone()
+            
+            if existing:
+                existing_route_id, dep_airport, arr_airport = existing
+                return jsonify({
+                    'success': False,
+                    'message': f'Aircraft is already assigned to route {dep_airport} → {arr_airport}. Remove existing assignment first.'
+                })
+            
+            # Check if this exact assignment already exists (prevent duplicates)
+            duplicate_query = """
+                SELECT id FROM route_assignments 
+                WHERE aircraft_id = ? AND route_id = ? AND active = 1
+            """
+            duplicate = conn.execute(duplicate_query, (str(aircraft_id), route_id)).fetchone()
+            
+            if duplicate:
+                return jsonify({
+                    'success': False,
+                    'message': 'This exact route assignment already exists.'
+                })
+        
+        # Simplified frequency handling for fast game pace
+        max_frequency = min(frequency, 7)  # Allow up to daily flights
+        departure_times = ["08:00"] * max_frequency
         
         success, message = route_economics.assign_aircraft_to_route(
-            route_id, str(aircraft_id), frequency, departure_times, 
+            route_id, str(aircraft_id), max_frequency, departure_times, 
             economy_fare, business_fare
         )
+        
+        if success:
+            message = f"Route assigned successfully! Flying {max_frequency} times per week (with rest periods)."
         
         return jsonify({
             'success': success,
             'message': message
         })
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Route assignment error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Assignment failed: {str(e)}'
+        })
+
+@app.route('/api/remove_assignment', methods=['POST'])
+def api_remove_assignment():
+    """Remove aircraft route assignment"""
+    try:
+        data = request.get_json()
+        aircraft_id = data.get('aircraft_id')
+        route_id = data.get('route_id')
+        
+        if not aircraft_id or not route_id:
+            return jsonify({
+                'success': False,
+                'message': 'Aircraft ID and Route ID are required'
+            })
+        
+        with sqlite3.connect(db_path) as conn:
+            # Remove the assignment
+            query = """
+                UPDATE route_assignments 
+                SET active = 0 
+                WHERE aircraft_id = ? AND route_id = ? AND active = 1
+            """
+            cursor = conn.execute(query, (str(aircraft_id), route_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                return jsonify({
+                    'success': True,
+                    'message': f'Route assignment removed successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'No active assignment found to remove'
+                })
+                
+    except Exception as e:
+        print(f"❌ Remove assignment error: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error removing assignment: {str(e)}'
+        })
+
+@app.route('/api/cleanup_assignments', methods=['POST'])
+def api_cleanup_assignments():
+    """Clean up duplicate and invalid route assignments"""
+    try:
+        with sqlite3.connect(db_path) as conn:
+            # Find and remove duplicate assignments (keep only the latest)
+            cleanup_query = """
+                DELETE FROM route_assignments 
+                WHERE id NOT IN (
+                    SELECT MAX(id) 
+                    FROM route_assignments 
+                    GROUP BY aircraft_id, route_id, active
+                )
+            """
+            result = conn.execute(cleanup_query)
+            duplicates_removed = result.rowcount
+            
+            # Deactivate assignments for aircraft that don't exist in fleet
+            deactivate_query = """
+                UPDATE route_assignments 
+                SET active = 0 
+                WHERE aircraft_id NOT IN (SELECT id FROM fleet) 
+                AND active = 1
+            """
+            result = conn.execute(deactivate_query)
+            invalid_deactivated = result.rowcount
+            
+            conn.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Cleaned up {duplicates_removed} duplicate assignments and deactivated {invalid_deactivated} invalid assignments',
+                'duplicates_removed': duplicates_removed,
+                'invalid_deactivated': invalid_deactivated
+            })
+            
+    except Exception as e:
+        print(f"❌ Cleanup error: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error cleaning up assignments: {str(e)}'
+        })
+
+@app.route('/api/sync_aircraft', methods=['POST'])
+def api_sync_aircraft():
+    """Sync owned aircraft to fleet table for route assignments"""
+    try:
+        with sqlite3.connect(db_path) as conn:
+            # Get owned aircraft
+            owned_query = """
+                SELECT id, model, location, age_years, current_value 
+                FROM owned_aircraft
+            """
+            owned_aircraft = conn.execute(owned_query).fetchall()
+            
+            # Clear existing fleet entries (keep only non-marketplace aircraft)
+            conn.execute("DELETE FROM fleet WHERE airlineCode = 1")
+            
+            # Insert owned aircraft into fleet table
+            for aircraft in owned_aircraft:
+                aircraft_id, model, location, age_years, current_value = aircraft
+                
+                # Generate registration number from ID
+                registration = aircraft_id.replace('_', '-')
+                
+                # Map model to ICAO code
+                model_mapping = {
+                    'A320': 'A320',
+                    'A321': 'A321', 
+                    'A330': 'A330',
+                    'A350': 'A350',
+                    'B737': 'B737',
+                    'B737 MAX 8': 'B38M',
+                    'B777': 'B777',
+                    'B787': 'B787',
+                    'Embraer E175': 'E175',
+                    'ATR 72-600': 'AT76'
+                }
+                
+                # Extract base model for mapping
+                base_model = model.split(' ')[0]  # Get first part
+                if 'B737' in model:
+                    icao_code = 'B38M' if 'MAX' in model else 'B737'
+                elif 'Embraer' in model:
+                    icao_code = 'E175'
+                elif 'ATR' in model:
+                    icao_code = 'AT76'
+                else:
+                    icao_code = model_mapping.get(base_model, 'A321')
+                
+                # Insert into fleet
+                fleet_query = """
+                    INSERT OR REPLACE INTO fleet 
+                    (id, registration, airframeIcao, logLocation, airlineCode, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """
+                
+                # Use a sequential ID for fleet
+                fleet_id = len([r for r in conn.execute("SELECT id FROM fleet").fetchall()]) + 1
+                
+                conn.execute(fleet_query, (
+                    fleet_id,
+                    registration,
+                    icao_code,
+                    location,
+                    1,  # airlineCode
+                    'active'
+                ))
+            
+            conn.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Synced {len(owned_aircraft)} aircraft to fleet',
+                'synced_count': len(owned_aircraft)
+            })
+            
+    except Exception as e:
+        print(f"❌ Sync aircraft error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Error syncing aircraft: {str(e)}'
+        })
 
 @app.route('/api/time_speed', methods=['POST'])
 def api_set_time_speed():
@@ -350,6 +681,7 @@ def api_set_time_speed():
         return jsonify({'success': True, 'speed': time_speed})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/economics')
 def api_economics():
@@ -494,8 +826,14 @@ def broadcast_aircraft_updates():
                 'time_speed': time_speed
             })
             
-            # Update every 2 seconds for smooth movement
-            time.sleep(2)
+            # Balanced update frequency - fast but not overwhelming
+            if time_speed <= 10:
+                update_interval = 1.0  # 1 second for normal speeds
+            elif time_speed <= 50:
+                update_interval = 0.5  # 0.5 seconds for high speeds  
+            else:
+                update_interval = 0.2  # 0.2 seconds for ludicrous speeds
+            time.sleep(update_interval)
             
         except Exception as e:
             print(f"Error in broadcast thread: {e}")
