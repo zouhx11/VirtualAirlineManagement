@@ -740,11 +740,40 @@ def api_economics():
                 cost_breakdown['maintenance'] += costs.get('maintenance', 0)
                 cost_breakdown['airport_fees'] += costs.get('airport_fees', 0)
                 
+                # Get aircraft info for display
+                assigned_aircraft = None
+                assignment_aircraft_id = assignment.get('aircraft_id')
+                
+                for ac in aircraft:
+                    # Handle potential string/integer mismatch
+                    aircraft_id = ac.get('id')
+                    if str(aircraft_id) == str(assignment_aircraft_id):
+                        assigned_aircraft = ac
+                        break
+                
+                # Extract aircraft type from available fields
+                if assigned_aircraft:
+                    # Try to get aircraft type from registration or airframeIcao
+                    registration = assigned_aircraft.get('registration', '')
+                    airframe_icao = assigned_aircraft.get('airframeIcao', '')
+                    
+                    # Extract model from registration (e.g., "A321-8212" -> "A321")
+                    if registration and '-' in registration:
+                        aircraft_type = registration.split('-')[0]
+                    elif airframe_icao:
+                        aircraft_type = airframe_icao
+                    else:
+                        aircraft_type = f"Aircraft {assigned_aircraft.get('id', 'Unknown')}"
+                else:
+                    aircraft_type = 'Unassigned'
+                
                 # Add to route performance
                 route_performance.append({
-                    'route': f"{assignment['departure_airport']} → {assignment['arrival_airport']}",
+                    'origin': assignment['departure_airport'],
+                    'destination': assignment['arrival_airport'],
                     'distance': assignment['distance_nm'],
-                    'frequency': assignment['frequency_weekly'],
+                    'frequency': assignment['frequency_weekly'] * 4,  # Convert weekly to monthly
+                    'aircraft_type': aircraft_type,
                     'revenue': route_revenue,
                     'costs': route_costs,
                     'profit': route_profit,
@@ -756,7 +785,20 @@ def api_economics():
                 continue
         
         net_profit = monthly_revenue - monthly_costs
-        roi = (net_profit / max(cash_balance * 1000000, 1)) * 100 if cash_balance > 0 else 0
+        
+        # Fix ROI calculation for airline tycoon game
+        # Use a more reasonable base investment (fleet value + operational capital)
+        # Instead of total cash, use a more realistic investment base
+        if cash_balance > 1000:  # If cash is unrealistically high (like 99 billion)
+            # Use fleet size as proxy for investment base (each aircraft ~$100M investment)
+            fleet_investment = len(aircraft) * 100  # $100M per aircraft in millions
+            base_investment = max(fleet_investment, 100)  # Minimum $100M base
+        else:
+            base_investment = max(cash_balance, 100)  # Use actual cash if reasonable
+        
+        # ROI = (Annual Profit / Investment Base) * 100
+        annual_profit = net_profit * 12
+        roi = (annual_profit / (base_investment * 1000000)) * 100 if base_investment > 0 else 0
         
         return jsonify({
             'cash_balance': cash_balance,

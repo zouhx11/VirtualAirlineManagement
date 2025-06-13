@@ -229,7 +229,131 @@ class AircraftTracker {
         const profitElement = document.getElementById('monthly-profit');
         profitElement.textContent = `$${economics.net_profit.toFixed(0)}`;
         profitElement.className = 'profit-amount ' + (economics.net_profit >= 0 ? 'positive' : 'negative');
+
+        // Update economics tab financial metrics
+        if (document.getElementById('monthly-revenue')) {
+            document.getElementById('monthly-revenue').textContent = `$${economics.monthly_revenue.toLocaleString()}`;
+        }
+        if (document.getElementById('monthly-costs')) {
+            document.getElementById('monthly-costs').textContent = `$${economics.monthly_costs.toLocaleString()}`;
+        }
+        if (document.getElementById('net-profit')) {
+            const netProfitElement = document.getElementById('net-profit');
+            netProfitElement.textContent = `$${economics.net_profit.toLocaleString()}`;
+            netProfitElement.className = economics.net_profit >= 0 ? 'positive' : 'negative';
+        }
+        if (document.getElementById('roi')) {
+            const roiElement = document.getElementById('roi');
+            roiElement.textContent = `${economics.roi.toFixed(1)}%`;
+            roiElement.className = economics.roi >= 0 ? 'positive' : 'negative';
+        }
+
+        // Update cost breakdown
+        this.updateCostBreakdown(economics.cost_breakdown, economics.monthly_costs);
+
+        // Update route performance
+        this.updateRoutePerformance(economics.route_performance);
     }
+
+    updateCostBreakdown(costBreakdown, totalCosts) {
+        // Update cost amounts
+        if (document.getElementById('fuel-cost')) {
+            document.getElementById('fuel-cost').textContent = `$${costBreakdown.fuel.toLocaleString()}`;
+        }
+        if (document.getElementById('crew-cost')) {
+            document.getElementById('crew-cost').textContent = `$${costBreakdown.crew.toLocaleString()}`;
+        }
+        if (document.getElementById('maintenance-cost')) {
+            document.getElementById('maintenance-cost').textContent = `$${costBreakdown.maintenance.toLocaleString()}`;
+        }
+        if (document.getElementById('fees-cost')) {
+            document.getElementById('fees-cost').textContent = `$${costBreakdown.airport_fees.toLocaleString()}`;
+        }
+
+        // Update cost breakdown bars (visual representation)
+        if (totalCosts > 0) {
+            const fuelPercent = (costBreakdown.fuel / totalCosts) * 100;
+            const crewPercent = (costBreakdown.crew / totalCosts) * 100;
+            const maintenancePercent = (costBreakdown.maintenance / totalCosts) * 100;
+            const feesPercent = (costBreakdown.airport_fees / totalCosts) * 100;
+
+            if (document.querySelector('.fuel-bar')) {
+                document.querySelector('.fuel-bar').style.width = `${fuelPercent}%`;
+            }
+            if (document.querySelector('.crew-bar')) {
+                document.querySelector('.crew-bar').style.width = `${crewPercent}%`;
+            }
+            if (document.querySelector('.maintenance-bar')) {
+                document.querySelector('.maintenance-bar').style.width = `${maintenancePercent}%`;
+            }
+            if (document.querySelector('.fees-bar')) {
+                document.querySelector('.fees-bar').style.width = `${feesPercent}%`;
+            }
+        }
+    }
+
+    updateRoutePerformance(routePerformance) {
+        const routePerformanceContainer = document.getElementById('route-performance');
+        if (!routePerformanceContainer) return;
+
+        if (!routePerformance || routePerformance.length === 0) {
+            routePerformanceContainer.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-chart-line"></i>
+                    <p>No route performance data available</p>
+                    <small>Start operating flights to see route profitability</small>
+                </div>
+            `;
+            return;
+        }
+
+        // Create route performance list
+        let html = '<div class="route-performance-list">';
+        routePerformance.forEach(route => {
+            const profitClass = route.profit >= 0 ? 'profit' : 'loss';
+            const profitIcon = route.profit >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            
+            html += `
+                <div class="route-item">
+                    <div class="route-info">
+                        <div class="route-name">
+                            <i class="fas fa-route"></i>
+                            ${route.origin} → ${route.destination}
+                        </div>
+                        <div class="route-details">
+                            <span class="aircraft-type">${route.aircraft_type || 'N/A'}</span>
+                            <span class="frequency">${route.frequency || 0} flights/month</span>
+                        </div>
+                    </div>
+                    <div class="route-metrics">
+                        <div class="metric">
+                            <label>Revenue</label>
+                            <span class="value">$${route.revenue.toLocaleString()}</span>
+                        </div>
+                        <div class="metric">
+                            <label>Costs</label>
+                            <span class="value">$${route.costs.toLocaleString()}</span>
+                        </div>
+                        <div class="metric">
+                            <label>Profit</label>
+                            <span class="value ${profitClass}">
+                                <i class="fas ${profitIcon}"></i>
+                                $${route.profit.toLocaleString()}
+                            </span>
+                        </div>
+                        <div class="metric">
+                            <label>Margin</label>
+                            <span class="value ${profitClass}">${route.margin.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        routePerformanceContainer.innerHTML = html;
+    }
+
 
     updateConnectionStatus(connected) {
         const statusElement = document.getElementById('connection-status');
@@ -294,6 +418,8 @@ class AircraftTracker {
             this.loadRoutesData();
         } else if (tabName === 'fleet') {
             this.loadFleetData();
+        } else if (tabName === 'economics') {
+            this.loadEconomics();
         }
     }
 
@@ -598,6 +724,54 @@ class AircraftTracker {
         this.map.flyTo([selectedFlight.lat, selectedFlight.lon], targetZoom, {
             duration: 1.5, // Smooth 1.5 second transition
             easeLinearity: 0.5
+        });
+    }
+
+    follow3DCamera(flights) {
+        // 📹 CAMERA FOLLOWING for 3D Map: Follow selected flight
+        if (!this.selectedFlight || !flights || !this.map3D) {
+            console.log(`🎥 3D SKIP: selectedFlight=${this.selectedFlight}, flights=${flights?.length}, map3D=${!!this.map3D}`);
+            return;
+        }
+        
+        // Find the selected flight
+        const selectedFlight = flights.find(flight => flight.id === this.selectedFlight);
+        if (!selectedFlight) {
+            console.log(`🎥 3D SKIP: Selected flight ${this.selectedFlight} not found in current flights`);
+            return;
+        }
+        
+        console.log(`🎥 3D FOLLOW: Following flight ${selectedFlight.id} at ${selectedFlight.lat}, ${selectedFlight.lon} (${selectedFlight.status})`);
+        
+        // Follow the aircraft with smooth camera movement
+        const currentZoom = this.map3D.getZoom();
+        let targetZoom = currentZoom;
+        let targetPitch = this.map3D.getPitch();
+        
+        // Adjust zoom and pitch based on flight status for better 3D viewing
+        switch (selectedFlight.status) {
+            case 'parked':
+                targetZoom = Math.max(14, currentZoom); // Close zoom for parked aircraft
+                targetPitch = 45; // Lower angle for ground view
+                break;
+            case 'departing':
+            case 'arriving':
+                targetZoom = Math.max(12, currentZoom); // Medium zoom for takeoff/landing
+                targetPitch = 60; // Good angle to see aircraft and ground
+                break;
+            case 'en_route':
+                targetZoom = Math.max(8, Math.min(10, currentZoom)); // Good range for cruising
+                targetPitch = 70; // High angle for aerial view
+                break;
+        }
+        
+        // Smooth camera movement to follow the aircraft in 3D
+        this.map3D.flyTo({
+            center: [selectedFlight.lon, selectedFlight.lat],
+            zoom: targetZoom,
+            pitch: targetPitch,
+            duration: 1500, // Smooth 1.5 second transition
+            easing: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t // Smooth easing
         });
     }
     
@@ -1218,6 +1392,9 @@ class AircraftTracker {
                 }
             }
         });
+
+        // 📹 CAMERA FOLLOWING: Follow selected flight in 3D mode
+        this.follow3DCamera(data.flights);
 
         // Update flight statistics
         this.updateFlightStats(data.flights);

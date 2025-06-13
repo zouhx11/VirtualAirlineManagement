@@ -190,7 +190,7 @@ def create_initial_database(db_path: str):
             CREATE TABLE IF NOT EXISTS airline_finances (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT NOT NULL,
-                cash_balance REAL DEFAULT 100000000000,
+                cash_balance REAL DEFAULT 250000000,
                 revenue REAL DEFAULT 0,
                 expenses REAL DEFAULT 0,
                 profit_loss REAL DEFAULT 0,
@@ -267,7 +267,7 @@ def create_initial_database(db_path: str):
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             datetime.now().isoformat(),
-            100000000000,  # $100B starting cash
+            250000000,  # $250M starting cash - reasonable for airline tycoon
             0, 0, 0,
             "Initial airline setup"
         ))

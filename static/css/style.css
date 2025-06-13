@@ -22,23 +22,37 @@ body {
 /* Controls Panel */
 .controls-panel {
     background: #2d2d2d;
-    padding: 10px 20px;
+    padding: 8px 15px;
     display: flex;
-    gap: 20px;
+    gap: 12px;
     align-items: center;
     border-bottom: 1px solid #444;
     z-index: 999;
+    flex-wrap: wrap;
 }
 
 .control-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
 }
 
 .control-group label {
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Compact buttons in control panel */
+.controls-panel .btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    min-width: auto;
+}
+
+.controls-panel select {
+    font-size: 0.8rem;
+    padding: 2px 6px;
 }
 
 /* Financial displays in header */

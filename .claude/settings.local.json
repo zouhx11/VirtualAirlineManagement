@@ -37,7 +37,8 @@
       "WebFetch(domain:docs.maptiler.com)",
       "Bash(node:*)",
       "WebFetch(domain:cesium.com)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

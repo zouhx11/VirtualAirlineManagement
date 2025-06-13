@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Economics Display</title>
+</head>
+<body>
+    <div id="cash-balance">Loading...</div>
+    <div id="monthly-profit">Loading...</div>
+    <div id="fleet-count">Loading...</div>
+    <div id="monthly-revenue">Loading...</div>
+    <div id="monthly-costs">Loading...</div>
+    <div id="net-profit">Loading...</div>
+    <div id="roi">Loading...</div>
+    <div id="fuel-cost">Loading...</div>
+    <div id="crew-cost">Loading...</div>
+    <div id="maintenance-cost">Loading...</div>
+    <div id="fees-cost">Loading...</div>
+
+    <script>
+        async function testEconomicsAPI() {
+            try {
+                const response = await fetch('/api/economics');
+                const economics = await response.json();
+                
+                console.log('Raw economics data:', economics);
+                
+                // Test the same update logic as app.js
+                document.getElementById('cash-balance').textContent = `$${economics.cash_balance.toFixed(1)}M`;
+                document.getElementById('fleet-count').textContent = `${economics.fleet_size} aircraft`;
+                
+                const profitElement = document.getElementById('monthly-profit');
+                profitElement.textContent = `$${economics.net_profit.toFixed(0)}`;
+                profitElement.className = 'profit-amount ' + (economics.net_profit >= 0 ? 'positive' : 'negative');
+
+                // Update economics tab financial metrics
+                if (document.getElementById('monthly-revenue')) {
+                    document.getElementById('monthly-revenue').textContent = `$${economics.monthly_revenue.toLocaleString()}`;
+                }
+                if (document.getElementById('monthly-costs')) {
+                    document.getElementById('monthly-costs').textContent = `$${economics.monthly_costs.toLocaleString()}`;
+                }
+                if (document.getElementById('net-profit')) {
+                    const netProfitElement = document.getElementById('net-profit');
+                    netProfitElement.textContent = `$${economics.net_profit.toLocaleString()}`;
+                    netProfitElement.className = economics.net_profit >= 0 ? 'positive' : 'negative';
+                }
+                if (document.getElementById('roi')) {
+                    const roiElement = document.getElementById('roi');
+                    roiElement.textContent = `${economics.roi.toFixed(1)}%`;
+                    roiElement.className = economics.roi >= 0 ? 'positive' : 'negative';
+                }
+                
+                // Update cost breakdown
+                const costBreakdown = economics.cost_breakdown;
+                if (document.getElementById('fuel-cost')) {
+                    document.getElementById('fuel-cost').textContent = `$${costBreakdown.fuel.toLocaleString()}`;
+                }
+                if (document.getElementById('crew-cost')) {
+                    document.getElementById('crew-cost').textContent = `$${costBreakdown.crew.toLocaleString()}`;
+                }
+                if (document.getElementById('maintenance-cost')) {
+                    document.getElementById('maintenance-cost').textContent = `$${costBreakdown.maintenance.toLocaleString()}`;
+                }
+                if (document.getElementById('fees-cost')) {
+                    document.getElementById('fees-cost').textContent = `$${costBreakdown.airport_fees.toLocaleString()}`;
+                }
+                
+                console.log('Economics display updated successfully');
+                
+            } catch (error) {
+                console.error('Error loading economics:', error);
+                document.body.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test when page loads
+        window.onload = testEconomicsAPI;
+    </script>
+</body>
+</html>

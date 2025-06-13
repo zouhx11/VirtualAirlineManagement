@@ -22,62 +22,62 @@
         <!-- Controls Panel -->
         <div class="controls-panel">
             <div class="control-group">
-                <label for="time-speed">⚡ Speed:</label>
+                <label for="time-speed">⚡</label>
                 <select id="time-speed">
-                    <option value="1">1x Normal</option>
-                    <option value="5">5x Fast</option>
-                    <option value="10">10x Very Fast</option>
-                    <option value="20">20x Ultra Fast</option>
-                    <option value="50">50x Hyper Speed</option>
-                    <option value="100">100x LUDICROUS Speed</option>
-                    <option value="200">200x PLAID Speed</option>
+                    <option value="1">1x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                    <option value="20">20x</option>
+                    <option value="50">50x</option>
+                    <option value="100">100x</option>
+                    <option value="200">200x</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label><i class="fas fa-dollar-sign"></i> Cash:</label>
+                <label><i class="fas fa-dollar-sign"></i></label>
                 <span id="cash-balance" class="cash-amount">$0.0M</span>
             </div>
             
             <div class="control-group">
-                <label><i class="fas fa-chart-line"></i> Monthly P&L:</label>
+                <label><i class="fas fa-chart-line"></i></label>
                 <span id="monthly-profit" class="profit-amount">$0</span>
             </div>
             
             <div class="control-group">
-                <label><i class="fas fa-plane"></i> Fleet:</label>
+                <label><i class="fas fa-plane"></i></label>
                 <span id="fleet-count">0 aircraft</span>
             </div>
             
             <div class="control-group">
-                <label><i class="fas fa-wifi"></i> Status:</label>
-                <span id="connection-status" class="status disconnected">Disconnected</span>
+                <label><i class="fas fa-wifi"></i></label>
+                <span id="connection-status" class="status disconnected">Connected</span>
             </div>
             
             <div class="control-group">
-                <button id="toggle-routes" class="btn btn-secondary">
-                    <i class="fas fa-route"></i> Routes
+                <button id="toggle-routes" class="btn btn-secondary" title="Toggle Routes">
+                    <i class="fas fa-route"></i>
                 </button>
             </div>
             
             <div class="control-group">
-                <button id="toggle-weather" class="btn btn-secondary active">
-                    <i class="fas fa-cloud"></i> Weather
+                <button id="toggle-weather" class="btn btn-secondary active" title="Toggle Weather">
+                    <i class="fas fa-cloud"></i>
                 </button>
             </div>
             
             <div class="control-group">
-                <button id="toggle-sidebar" class="btn btn-secondary">
-                    <i class="fas fa-bars"></i> Panel
+                <button id="toggle-sidebar" class="btn btn-secondary" title="Toggle Panel">
+                    <i class="fas fa-bars"></i>
                 </button>
             </div>
-            
             
             <div class="control-group">
-                <button id="help-tutorial" class="btn btn-secondary">
-                    <i class="fas fa-question-circle"></i> Help
+                <button id="help-tutorial" class="btn btn-secondary" title="Help Tutorial">
+                    <i class="fas fa-question-circle"></i>
                 </button>
             </div>
+            
         </div>
 
         <!-- Main Content -->
@@ -428,12 +428,20 @@
                                 <span>Plan profitable routes</span>
                             </div>
                             <div class="feature-item">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Track detailed economics</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-video"></i>
+                                <span>Follow flights with smart camera</span>
+                            </div>
+                            <div class="feature-item">
                                 <i class="fas fa-cloud"></i>
                                 <span>Handle weather challenges</span>
                             </div>
                             <div class="feature-item">
                                 <i class="fas fa-chart-line"></i>
-                                <span>Maximize profits</span>
+                                <span>Maximize $250M starting capital</span>
                             </div>
                         </div>
                     </div>
@@ -504,31 +512,35 @@
 
                     <div class="tutorial-step" data-step="4">
                         <div class="tutorial-icon">
-                            <i class="fas fa-route"></i>
+                            <i class="fas fa-chart-pie"></i>
                         </div>
                         <h2>Route Planning & Economics</h2>
-                        <p>Profitable routes are the heart of your airline. The route system analyzes:</p>
+                        <p>Master your airline's finances with the comprehensive <strong>Economics tab</strong>. Click "Economics" to view:</p>
                         <div class="economics-breakdown">
                             <div class="metric-group">
-                                <h4><i class="fas fa-coins"></i> Revenue Factors</h4>
+                                <h4><i class="fas fa-chart-line"></i> Financial Overview</h4>
                                 <ul>
-                                    <li>Passenger demand between cities</li>
-                                    <li>Ticket pricing (Economy & Business)</li>
-                                    <li>Flight frequency per week</li>
-                                    <li>Aircraft capacity utilization</li>
+                                    <li>Monthly revenue & operating costs</li>
+                                    <li>Net profit & ROI tracking</li>
+                                    <li>Visual cost breakdown charts</li>
+                                    <li>Route-by-route profitability</li>
                                 </ul>
                             </div>
                             <div class="metric-group">
-                                <h4><i class="fas fa-calculator"></i> Operating Costs</h4>
+                                <h4><i class="fas fa-calculator"></i> Cost Breakdown</h4>
                                 <ul>
-                                    <li>Fuel consumption & prices</li>
-                                    <li>Crew salaries & training</li>
-                                    <li>Airport fees & taxes</li>
-                                    <li>Aircraft maintenance</li>
+                                    <li>Fuel: ~40% of operating expenses</li>
+                                    <li>Crew: ~20% of operating expenses</li>
+                                    <li>Maintenance: ~25% of expenses</li>
+                                    <li>Airport fees: ~15% of expenses</li>
                                 </ul>
                             </div>
                         </div>
-                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Goal:</strong> Aim for routes with >15% profit margin for sustainable growth!</p>
+                        <div class="tutorial-feature-highlight" style="background: #2d3748; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                            <i class="fas fa-star" style="color: #4CAF50;"></i>
+                            <strong>New Feature:</strong> The Economics tab shows real-time financial data with interactive charts and route performance analysis!
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Goal:</strong> With $250M starting capital, target 10-15% ROI for sustainable growth!</p>
                     </div>
 
                     <div class="tutorial-step" data-step="5">
@@ -574,37 +586,48 @@
                         <div class="tutorial-icon">
                             <i class="fas fa-tachometer-alt"></i>
                         </div>
-                        <h2>Control Panel Overview</h2>
-                        <p>Master the control panel at the top of your screen for efficient management:</p>
+                        <h2>Compact Control Panel</h2>
+                        <p>The streamlined control panel provides quick access to essential functions:</p>
                         <div class="controls-demo">
                             <div class="control-item">
                                 <i class="fas fa-fast-forward"></i>
                                 <div>
-                                    <strong>Time Speed</strong>
-                                    <p>Accelerate time up to 20x for faster simulation</p>
+                                    <strong>Time Speed (⚡)</strong>
+                                    <p>Accelerate time up to 200x for rapid simulation</p>
                                 </div>
                             </div>
                             <div class="control-item">
                                 <i class="fas fa-dollar-sign"></i>
                                 <div>
-                                    <strong>Cash Balance</strong>
-                                    <p>Monitor your available funds for purchases</p>
+                                    <strong>Cash Balance ($)</strong>
+                                    <p>Monitor your $250M starting capital</p>
                                 </div>
                             </div>
                             <div class="control-item">
                                 <i class="fas fa-chart-line"></i>
                                 <div>
                                     <strong>Monthly P&L</strong>
-                                    <p>Track your airline's profitability</p>
+                                    <p>Real-time profit/loss tracking</p>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <i class="fas fa-plane"></i>
+                                <div>
+                                    <strong>Fleet Size</strong>
+                                    <p>Track your aircraft count</p>
                                 </div>
                             </div>
                             <div class="control-item">
                                 <i class="fas fa-route"></i>
                                 <div>
-                                    <strong>Routes Toggle</strong>
-                                    <p>Show/hide route projection lines</p>
+                                    <strong>Icon Buttons</strong>
+                                    <p>Routes, weather, panel toggles (hover for tooltips)</p>
                                 </div>
                             </div>
+                        </div>
+                        <div class="tutorial-feature-highlight" style="background: #2d3748; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                            <i class="fas fa-compress-alt" style="color: #4CAF50;"></i>
+                            <strong>Compact Design:</strong> Streamlined layout with icon-only buttons and reduced spacing for maximum screen space!
                         </div>
                     </div>
 
@@ -612,32 +635,43 @@
                         <div class="tutorial-icon">
                             <i class="fas fa-cube"></i>
                         </div>
-                        <h2>3D Flight Tracking</h2>
-                        <p>Experience immersive flight tracking with our 3D flight mode:</p>
+                        <h2>Advanced Flight Tracking</h2>
+                        <p>Experience immersive flight tracking across all viewing modes with enhanced camera controls:</p>
                         <div class="feature-showcase">
                             <div class="showcase-item">
                                 <i class="fas fa-globe"></i>
                                 <div>
                                     <strong>3D Terrain View</strong>
-                                    <p>See flights navigate over realistic 3D landscapes</p>
+                                    <p>Realistic 3D landscapes with detailed aircraft models</p>
                                 </div>
                             </div>
                             <div class="showcase-item">
-                                <i class="fas fa-plane"></i>
+                                <i class="fas fa-video"></i>
                                 <div>
-                                    <strong>Aircraft Models</strong>
-                                    <p>Detailed 3D aircraft models with real-time positioning</p>
+                                    <strong>Smart Camera Following</strong>
+                                    <p>Camera automatically follows selected flights in 2D, 3D, and Globe modes</p>
                                 </div>
                             </div>
                             <div class="showcase-item">
                                 <i class="fas fa-mouse-pointer"></i>
                                 <div>
-                                    <strong>Interactive Control</strong>
-                                    <p>Click flights to follow and track their progress</p>
+                                    <strong>Interactive Selection</strong>
+                                    <p>Click any flight to track it with dynamic zoom and perspective</p>
+                                </div>
+                            </div>
+                            <div class="showcase-item">
+                                <i class="fas fa-eye"></i>
+                                <div>
+                                    <strong>Adaptive Views</strong>
+                                    <p>Camera adjusts zoom/angle based on flight status (parked/departing/cruising)</p>
                                 </div>
                             </div>
                         </div>
-                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Access:</strong> Click "3D Flight Mode" button when flights are active!</p>
+                        <div class="tutorial-feature-highlight" style="background: #2d3748; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                            <i class="fas fa-camera" style="color: #4CAF50;"></i>
+                            <strong>Enhanced Tracking:</strong> Camera now follows selected flights in ALL modes - 2D, 3D, and Globe views!
+                        </div>
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Switch between 2D/3D/Globe modes while tracking - camera follows seamlessly!</p>
                     </div>
 
                     <div class="tutorial-step" data-step="8">
@@ -657,8 +691,8 @@
                             <div class="roadmap-step">
                                 <div class="step-number">2</div>
                                 <div class="step-content">
-                                    <strong>Optimize Operations</strong>
-                                    <p>Monitor route performance and adjust pricing for maximum profitability</p>
+                                    <strong>Monitor Economics</strong>
+                                    <p>Use the Economics tab to track revenue, costs, ROI, and route performance</p>
                                 </div>
                             </div>
                             <div class="roadmap-step">
@@ -679,10 +713,11 @@
                         <div class="final-tips">
                             <h4><i class="fas fa-star"></i> Pro Tips</h4>
                             <ul>
-                                <li>Monitor weather impacts on your routes</li>
+                                <li>Start with your $250M capital - invest wisely!</li>
+                                <li>Monitor the Economics tab for detailed financial insights</li>
+                                <li>Target 10-15% ROI for sustainable airline growth</li>
+                                <li>Use flight tracking to monitor operations across all view modes</li>
                                 <li>Balance short-haul frequency with long-haul profitability</li>
-                                <li>Use the 3D mode to showcase your growing fleet</li>
-                                <li>Check the Economics tab regularly for performance insights</li>
                             </ul>
                         </div>
                     </div>
