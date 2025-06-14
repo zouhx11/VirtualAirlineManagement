@@ -72,21 +72,46 @@ class AircraftTracker {
     }
 
     initMap() {
-        // Initialize Leaflet map with dark theme
-        this.map = L.map('map', {
-            center: [40.6413, -73.7781], // JFK
-            zoom: 3,
-            zoomControl: true
-        });
+        try {
+            // Wait for DOM to be ready and container to have dimensions
+            setTimeout(() => {
+                // Initialize Leaflet map with dark theme
+                this.map = L.map('map', {
+                    center: [40.6413, -73.7781], // JFK
+                    zoom: 3,
+                    zoomControl: true,
+                    preferCanvas: true, // Better performance on Mac
+                    renderer: L.canvas() // Use canvas renderer for Mac compatibility
+                });
 
-        // Add dark tile layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(this.map);
+                // Add dark tile layer with fallback
+                const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                });
+                
+                tileLayer.on('tileerror', () => {
+                    // Fallback to OpenStreetMap if CartoDB fails
+                    console.warn('CartoDB tiles failed, switching to OSM fallback');
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        maxZoom: 20
+                    }).addTo(this.map);
+                });
+                
+                tileLayer.addTo(this.map);
 
-        console.log('✅ Map initialized');
+                // Force map to invalidate size after initialization (Mac fix)
+                setTimeout(() => {
+                    this.map.invalidateSize();
+                }, 100);
+
+                console.log('✅ Map initialized');
+            }, 100); // Small delay to ensure container is ready
+        } catch (error) {
+            console.error('❌ Map initialization failed:', error);
+        }
     }
 
     initSocket() {
