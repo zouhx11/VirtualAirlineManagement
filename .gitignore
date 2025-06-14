@@ -181,3 +181,7 @@ pyrightconfig.json
 stkp_va
 __init__.py
 VirtualAirlineManagement.code-workspace
+
+# Game database files
+userdata.db
+config.ini

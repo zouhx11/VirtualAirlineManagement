@@ -28,7 +28,23 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Global variables
 config_manager = ConfigManager()
-db_path = config_manager.get_database_path('userdata')
+
+# Initialize database if it doesn't exist
+def initialize_database_if_needed():
+    """Initialize database and config if they don't exist"""
+    db_path = config_manager.get_database_path('userdata')
+    
+    if not os.path.exists(db_path):
+        print("🚀 First time setup - initializing database...")
+        # Import and run initial setup
+        from scripts.initial_setup import main as setup_main
+        setup_main()
+        print("✅ Database initialized successfully!")
+    
+    return db_path
+
+# Initialize database and get path    
+db_path = initialize_database_if_needed()
 route_economics = RouteEconomics(db_path)
 aircraft_marketplace = AircraftMarketplace(db_path)
 

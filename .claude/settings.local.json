@@ -38,7 +38,8 @@
       "Bash(node:*)",
       "WebFetch(domain:cesium.com)",
       "Bash(ss:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }
