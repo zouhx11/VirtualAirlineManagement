@@ -689,11 +689,17 @@ def api_set_time_speed():
     try:
         data = request.get_json()
         new_speed = float(data.get('speed', 1.0))
+        
+        # Validate speed range (0.05x to 200x)
+        if new_speed < 0.05 or new_speed > 200:
+            return jsonify({'error': 'Speed must be between 0.05x and 200x'}), 400
+            
         time_speed = new_speed
         
         # Broadcast new speed to all clients
         socketio.emit('time_speed_update', {'speed': time_speed})
         
+        print(f"⚡ Time speed set to {time_speed}x")
         return jsonify({'success': True, 'speed': time_speed})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
