@@ -81,6 +81,12 @@
                 </button>
             </div>
             
+            <div class="control-group">
+                <button id="start-flight-simulator" class="btn btn-secondary" title="Flight Simulator">
+                    <i class="fas fa-fighter-jet"></i>
+                </button>
+            </div>
+            
         </div>
 
         <!-- Main Content -->
@@ -130,6 +136,50 @@
                 <div class="globe-exit">
                     <button id="exit-globe-mode" class="btn btn-danger">
                         <i class="fas fa-times"></i> Exit Globe Mode
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cesium Flight Simulator (separate from 3D Flight Mode) -->
+            <div id="cesium-flight-simulator" class="cesium-flight-simulator" style="display: none;">
+                <div id="cesium-container" class="cesium-container">
+                    <div class="cesium-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading Cesium Flight Simulator...
+                    </div>
+                </div>
+                
+                <!-- Tutorial Toolbar (exact from Cesium tutorial) -->
+                <div id="toolbar">
+                    <table class="infoPanel">
+                        <tbody>
+                            <tr>
+                                <td>Heading</td>
+                                <td><span id="heading"></span>°</td>
+                            </tr>
+                            <tr>
+                                <td>Pitch</td>
+                                <td><span id="pitch"></span>°</td>
+                            </tr>
+                            <tr>
+                                <td>Roll</td>
+                                <td><span id="roll"></span>°</td>
+                            </tr>
+                            <tr>
+                                <td>Speed</td>
+                                <td><span id="speed"></span> m/s</td>
+                            </tr>
+                            <tr>
+                                <td>Following aircraft</td>
+                                <td><input id="fromBehind" type="checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Cesium Exit Button -->
+                <div class="cesium-exit">
+                    <button id="exit-cesium-mode" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Exit Flight Simulator
                     </button>
                 </div>
             </div>
@@ -771,6 +821,15 @@
     <script src="https://cdn.maptiler.com/maptiler-3d/v2.0.2/maptiler-3d.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19"></script>
     
+    <!-- Cesium Library for Flight Simulator -->
+    <script>
+        window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.130/Build/Cesium/';
+    </script>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.130/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.130/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    
+    <!-- Our application scripts -->
+    <script src="{{ url_for('static', filename='js/flight_simulator_tutorial.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

@@ -27,6 +27,10 @@ class AircraftTracker {
         this.selectedFlight = null; // Track selected flight for camera control - null = free camera, selected = locked camera
         this.maptilerApiKey = 'icLNtmi1FuvbINsiGgdt'; // Demo API key for testing
         
+        // Cesium Flight Simulator
+        this.cesiumViewer = null;
+        this.isCesiumMode = false;
+        
         // Airport coordinates
         this.AIRPORTS = {
             'KJFK': { lat: 40.6413, lon: -73.7781, name: 'John F Kennedy Intl' },
@@ -67,8 +71,7 @@ class AircraftTracker {
         this.initSocket();
         this.initUI();
         this.initTutorial();
-        this.loadInitialData();
-        this.initWeatherSystem();
+        // loadInitialData and initWeatherSystem are now called after map is ready
     }
 
     initMap() {
@@ -105,6 +108,11 @@ class AircraftTracker {
                 // Force map to invalidate size after initialization (Mac fix)
                 setTimeout(() => {
                     this.map.invalidateSize();
+                    
+                    // Initialize data and weather after map is ready
+                    this.loadInitialData();
+                    this.initWeatherSystem();
+                    
                 }, 100);
 
                 console.log('✅ Map initialized');
@@ -183,6 +191,15 @@ class AircraftTracker {
             this.toggle2DMapMode();
         });
 
+        // Flight Simulator
+        document.getElementById('start-flight-simulator').addEventListener('click', () => {
+            this.startFlightSimulator();
+        });
+
+        document.getElementById('exit-cesium-mode').addEventListener('click', () => {
+            this.exitFlightSimulator();
+        });
+
         // Route lines toggle
         document.getElementById('toggle-routes').addEventListener('click', () => {
             this.toggleRouteLines();
@@ -220,6 +237,12 @@ class AircraftTracker {
     }
 
     addAirports(airports) {
+        // Check if map is initialized
+        if (!this.map) {
+            console.warn('⚠️ Map not initialized, skipping airports');
+            return;
+        }
+
         Object.entries(airports).forEach(([code, airport]) => {
             const marker = L.circleMarker([airport.lat, airport.lon], {
                 radius: 8,
@@ -2513,25 +2536,17 @@ class AircraftTracker {
     }
 
     addWeatherLayer(airportCode, weather) {
-        const airports = {
-            'KJFK': { lat: 40.6413, lon: -73.7781 },
-            'KLAX': { lat: 33.9425, lon: -118.4081 },
-            'EGLL': { lat: 51.4700, lon: -0.4543 },
-            'EDDF': { lat: 50.0379, lon: 8.5622 },
-            'RJTT': { lat: 35.7653, lon: 140.3864 },
-            'OMDB': { lat: 25.2532, lon: 55.3657 },
-            'KATL': { lat: 33.6407, lon: -84.4277 },
-            'KORD': { lat: 41.9742, lon: -87.9073 },
-            'KBOS': { lat: 42.3656, lon: -71.0096 },
-            'KDCA': { lat: 38.8512, lon: -77.0402 },
-            'KLAS': { lat: 36.0840, lon: -115.1537 },
-            'KMCO': { lat: 28.4312, lon: -81.3081 },
-            'KSFO': { lat: 37.6213, lon: -122.3790 },
-            'YSSY': { lat: -33.9399, lon: 151.1753 }
-        };
+        // Check if map is initialized
+        if (!this.map) {
+            console.warn('⚠️ Map not initialized, skipping weather layer');
+            return;
+        }
 
-        const airport = airports[airportCode];
-        if (!airport) return;
+        const airport = this.AIRPORTS[airportCode];
+        if (!airport) {
+            console.warn(`⚠️ Airport ${airportCode} not found`);
+            return;
+        }
 
         // Remove existing weather layer
         if (this.weatherSystem.weatherLayers.has(airportCode)) {
@@ -3195,6 +3210,90 @@ class AircraftTracker {
         this.tutorialCompleted = false;
         this.tutorialStep = 1;
         this.showTutorial();
+    }
+
+    // Cesium Flight Simulator Methods
+    async startFlightSimulator() {
+        console.log('🛩️ Starting Cesium Flight Simulator...');
+        
+        this.isCesiumMode = true;
+        
+        // Hide other elements and show cesium simulator
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('flight-3d-viewer').style.display = 'none';
+        document.getElementById('globe-flight-viewer').style.display = 'none';
+        document.getElementById('sidebar').style.display = 'none';
+        document.querySelector('.legend').style.display = 'none';
+        document.getElementById('cesium-flight-simulator').style.display = 'block';
+        
+        // Initialize Cesium viewer if not already done
+        if (!this.cesiumViewer) {
+            await this.initCesiumViewer();
+        }
+        
+        console.log('✅ Cesium Flight Simulator activated');
+    }
+
+    async initCesiumViewer() {
+        try {
+            console.log('🌍 Initializing Cesium Viewer...');
+            
+            // Check if Cesium is available
+            if (typeof Cesium === 'undefined') {
+                throw new Error('Cesium library not loaded');
+            }
+            
+            // Create Cesium viewer with minimal configuration to avoid rendering issues
+            this.cesiumViewer = new Cesium.Viewer('cesium-container', {
+                baseLayerPicker: false,
+                vrButton: false,
+                geocoder: false,
+                homeButton: false,
+                sceneModePicker: false,
+                navigationHelpButton: false,
+                animation: false,
+                timeline: false,
+                fullscreenButton: false
+            });
+
+            // Hide the loading indicator
+            const loadingDiv = document.querySelector('.cesium-loading');
+            if (loadingDiv) {
+                loadingDiv.style.display = 'none';
+            }
+
+            // Initialize the tutorial flight simulator
+            if (window.initTutorialFlightSimulator) {
+                window.initTutorialFlightSimulator(this.cesiumViewer);
+            } else {
+                console.error('❌ Tutorial flight simulator function not found');
+            }
+
+            console.log('✅ Cesium Viewer initialized');
+            
+        } catch (error) {
+            console.error('❌ Error initializing Cesium viewer:', error);
+        }
+    }
+
+    exitFlightSimulator() {
+        console.log('🚪 Exiting Cesium Flight Simulator...');
+        
+        this.isCesiumMode = false;
+        
+        // Hide cesium simulator and show main interface
+        document.getElementById('cesium-flight-simulator').style.display = 'none';
+        document.getElementById('map').style.display = 'block';
+        document.getElementById('sidebar').style.display = 'block';
+        document.querySelector('.legend').style.display = 'block';
+        
+        // Clean up cesium viewer if needed
+        if (this.cesiumViewer) {
+            this.cesiumViewer.destroy();
+            this.cesiumViewer = null;
+        }
+        
+        console.log('✅ Returned to main interface');
     }
 }
 

@@ -39,7 +39,14 @@
       "WebFetch(domain:cesium.com)",
       "Bash(ss:*)",
       "Bash(curl:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(kill:*)",
+      "Bash(cat:*)",
+      "Bash(git restore:*)",
+      "Bash(venv/bin/python -m pip install:*)",
+      "Bash(pip3 install:*)",
+      "WebFetch(domain:sandcastle.cesium.com)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
