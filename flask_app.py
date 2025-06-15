@@ -1121,4 +1121,4 @@ if __name__ == '__main__':
     print("🗺️ No more page refreshes - smooth map updates!")
     
     # Run the app
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=9999, debug=True, allow_unsafe_werkzeug=True)
