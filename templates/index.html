@@ -27,7 +27,7 @@
                     <option value="0.05">0.05x</option>
                     <option value="0.1">0.1x</option>
                     <option value="0.5">0.5x</option>
-                    <option value="1">1x</option>
+                    <option value="1" selected>1x</option>
                     <option value="5">5x</option>
                     <option value="10">10x</option>
                     <option value="20">20x</option>
@@ -38,13 +38,13 @@
             </div>
             
             <div class="control-group">
-                <label><i class="fas fa-dollar-sign"></i></label>
-                <span id="cash-balance" class="cash-amount">$0.0M</span>
+                <label><i class="fas fa-coins"></i></label>
+                <span id="net-worth" class="net-worth-amount">$0.0M</span>
             </div>
             
             <div class="control-group">
                 <label><i class="fas fa-chart-line"></i></label>
-                <span id="monthly-profit" class="profit-amount">$0</span>
+                <span id="cash-flow" class="cash-flow-amount">$0/mo</span>
             </div>
             
             <div class="control-group">
@@ -297,6 +297,19 @@
                                 <h5><i class="fas fa-route"></i> Route Performance</h5>
                                 <div id="route-performance" class="route-performance-list">
                                     <div class="no-data">Assign routes to see profitability</div>
+                                </div>
+                            </div>
+
+                            <!-- AI Competition -->
+                            <div class="ai-competition">
+                                <h5><i class="fas fa-users"></i> Market Competition</h5>
+                                <div class="competition-controls">
+                                    <button id="load-competition" class="btn btn-secondary">
+                                        <i class="fas fa-sync"></i> Update Market
+                                    </button>
+                                </div>
+                                <div id="ai-competition-list" class="ai-competition-list">
+                                    <div class="no-data">Click "Update Market" to see competitor airlines</div>
                                 </div>
                             </div>
                         </div>
@@ -729,49 +742,196 @@
 
                     <div class="tutorial-step" data-step="8">
                         <div class="tutorial-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h2>🛒 Aircraft Trading & Fleet Management</h2>
+                        <p>Master aircraft lifecycle and fleet optimization in your airline tycoon empire:</p>
+                        
+                        <div class="tutorial-features">
+                            <div class="feature-item">
+                                <i class="fas fa-shopping-cart"></i>
+                                <div>
+                                    <strong>Aircraft Selling</strong>
+                                    <p>Sell aircraft in the Fleet tab when parked (not on routes). Use this to upgrade fleet or free up capital.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-line"></i>
+                                <div>
+                                    <strong>Fleet Value Tracking</strong>
+                                    <p>Monitor aircraft depreciation (4% annually). Newer aircraft retain value better but cost more upfront.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-balance-scale"></i>
+                                <div>
+                                    <strong>Buy vs Lease Strategy</strong>
+                                    <p>Buying: Higher upfront cost, own asset, no monthly payments<br>
+                                    Leasing: Lower upfront, monthly payments, preserve cash flow</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Start leasing, then buy profitable aircraft as cash grows!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="9">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-globe-americas"></i>
+                        </div>
+                        <h2>🌍 Global Route Network (66 Airports)</h2>
+                        <p>Build your worldwide airline empire with routes connecting major cities across all continents:</p>
+                        
+                        <div class="tutorial-features">
+                            <div class="feature-item">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <div>
+                                    <strong>Route Selection</strong>
+                                    <p>Choose from 168 available routes connecting 66 major airports worldwide. Routes tab shows all options.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-route"></i>
+                                <div>
+                                    <strong>Route Visualization</strong>
+                                    <p>Click "Routes" toggle button to see curved flight paths. Aircraft follow realistic 2D curved routes.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-calculator"></i>
+                                <div>
+                                    <strong>Distance & Pricing</strong>
+                                    <p>Longer routes = higher fares but more fuel costs. Optimize frequency vs distance for maximum profit.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Mix short-haul (high frequency) with long-haul (high margin) routes!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="10">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h2>✈️ Passenger Load Factor & Revenue</h2>
+                        <p>Understand how passenger demand affects your airline's profitability:</p>
+                        
+                        <div class="tutorial-features">
+                            <div class="feature-item">
+                                <i class="fas fa-percentage"></i>
+                                <div>
+                                    <strong>Random Load Factors</strong>
+                                    <p>Each flight has random passenger load (50-95%). Higher load = more revenue per flight.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <div>
+                                    <strong>Revenue Calculation</strong>
+                                    <p>Revenue = Passengers × Ticket Price. Monitor Economics tab for detailed flight revenue analysis.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <strong>Flight Frequency</strong>
+                                    <p>More flights per week = more revenue opportunities, but also higher operational costs.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Higher frequency on profitable routes maximizes load factor utilization!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="11">
+                        <div class="tutorial-icon">
                             <i class="fas fa-trophy"></i>
                         </div>
-                        <h2>Ready for Takeoff!</h2>
-                        <p>You're now equipped to build your aviation empire. Here's your roadmap to success:</p>
+                        <h2>🏢 AI Competition & Market Dominance</h2>
+                        <p>Compete against 8 AI airlines with different strategies and personalities:</p>
+                        
+                        <div class="tutorial-features">
+                            <div class="feature-item">
+                                <i class="fas fa-robot"></i>
+                                <div>
+                                    <strong>AI Competitors</strong>
+                                    <p>GlobalWings Airways, SkyBridge, EconoFly, and others compete for routes with Budget, Premium, and Aggressive strategies.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-chart-pie"></i>
+                                <div>
+                                    <strong>Market Share</strong>
+                                    <p>Monitor AI competition in Economics tab. AI airlines expand routes, adjust pricing, and buy aircraft dynamically.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-sword"></i>
+                                <div>
+                                    <strong>Competition Impact</strong>
+                                    <p>AI decisions affect route profitability. Undercut competitors or focus on underserved markets.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="tutorial-tip"><i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> Monitor AI moves and adapt pricing/routes to stay competitive!</p>
+                    </div>
+
+                    <div class="tutorial-step" data-step="12">
+                        <div class="tutorial-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h2>🎯 Master the Airline Tycoon Game!</h2>
+                        <p>You've learned all the essential mechanics. Here's your complete roadmap to airline domination:</p>
+                        
                         <div class="success-roadmap">
                             <div class="roadmap-step">
                                 <div class="step-number">1</div>
                                 <div class="step-content">
-                                    <strong>Start Small</strong>
-                                    <p>Lease your first aircraft and establish a profitable short-haul route</p>
+                                    <strong>Build Your Fleet</strong>
+                                    <p>Start with 2-3 leased aircraft. Use Marketplace tab to lease cost-effectively and preserve capital.</p>
                                 </div>
                             </div>
                             <div class="roadmap-step">
                                 <div class="step-number">2</div>
                                 <div class="step-content">
-                                    <strong>Monitor Economics</strong>
-                                    <p>Use the Economics tab to track revenue, costs, ROI, and route performance</p>
+                                    <strong>Establish Profitable Routes</strong>
+                                    <p>Choose 2-3 high-demand routes from the 168 available. Focus on short-haul first for quick returns.</p>
                                 </div>
                             </div>
                             <div class="roadmap-step">
                                 <div class="step-number">3</div>
                                 <div class="step-content">
-                                    <strong>Expand Network</strong>
-                                    <p>Add more aircraft and routes as your cash flow improves</p>
+                                    <strong>Monitor Performance</strong>
+                                    <p>Use Economics tab to track Net Worth, Cash Flow, and route profitability. Target 10-15% ROI.</p>
                                 </div>
                             </div>
                             <div class="roadmap-step">
                                 <div class="step-number">4</div>
                                 <div class="step-content">
-                                    <strong>Dominate Markets</strong>
-                                    <p>Build a global network and become the world's leading airline!</p>
+                                    <strong>Compete & Expand</strong>
+                                    <p>Monitor AI competition, adjust pricing, expand to new routes, and build your global empire!</p>
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="final-tips">
-                            <h4><i class="fas fa-star"></i> Pro Tips</h4>
+                            <h4><i class="fas fa-star"></i> Master Strategy Tips</h4>
                             <ul>
-                                <li>Start with your $250M capital - invest wisely!</li>
-                                <li>Monitor the Economics tab for detailed financial insights</li>
-                                <li>Target 10-15% ROI for sustainable airline growth</li>
-                                <li>Use flight tracking to monitor operations across all view modes</li>
-                                <li>Balance short-haul frequency with long-haul profitability</li>
+                                <li><strong>Capital Management:</strong> Start with $100B - lease first, buy profitable aircraft later</li>
+                                <li><strong>Route Strategy:</strong> Mix short-haul (high frequency) with long-haul (high margin)</li>
+                                <li><strong>Competition:</strong> Monitor AI airlines and adapt pricing to stay competitive</li>
+                                <li><strong>Fleet Management:</strong> Sell unprofitable aircraft, upgrade to newer models</li>
+                                <li><strong>Load Factor:</strong> Higher frequency routes maximize passenger load opportunities</li>
+                                <li><strong>Financial Health:</strong> Target Net Worth growth and positive Cash Flow</li>
+                                <li><strong>Time Control:</strong> Use speed multiplier (0.05x-200x) to accelerate or slow operations</li>
+                                <li><strong>Visualization:</strong> Toggle Routes button to see your network, track aircraft in 2D/3D</li>
                             </ul>
+                        </div>
+                        
+                        <div class="tutorial-feature-highlight" style="background: #1a4d3a; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #4CAF50;">
+                            <h4 style="color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-bullseye"></i> Your Goal</h4>
+                            <p style="margin: 0; color: #ffffff;">Build the world's most profitable airline! Compete against 8 AI airlines, manage 66 global airports, optimize 168 routes, and grow your aviation empire. Can you achieve market dominance?</p>
                         </div>
                     </div>
                 </div>

@@ -31,22 +31,84 @@ class AircraftTracker {
         this.cesiumViewer = null;
         this.isCesiumMode = false;
         
-        // Airport coordinates
+        // Airport coordinates - Major world airports for airline tycoon game
         this.AIRPORTS = {
-            'KJFK': { lat: 40.6413, lon: -73.7781, name: 'John F Kennedy Intl' },
-            'KLAX': { lat: 33.9425, lon: -118.4081, name: 'Los Angeles Intl' },
-            'EGLL': { lat: 51.4700, lon: -0.4543, name: 'London Heathrow' },
-            'EDDF': { lat: 50.0379, lon: 8.5622, name: 'Frankfurt am Main' },
-            'RJTT': { lat: 35.7653, lon: 140.3864, name: 'Tokyo Narita' },
-            'OMDB': { lat: 25.2532, lon: 55.3657, name: 'Dubai Intl' },
-            'KATL': { lat: 33.6407, lon: -84.4277, name: 'Atlanta Hartsfield' },
-            'KORD': { lat: 41.9742, lon: -87.9073, name: 'Chicago O\'Hare' },
-            'KBOS': { lat: 42.3656, lon: -71.0096, name: 'Boston Logan' },
-            'KDCA': { lat: 38.8512, lon: -77.0402, name: 'Reagan Washington' },
-            'KLAS': { lat: 36.0840, lon: -115.1537, name: 'Las Vegas McCarran' },
-            'KMCO': { lat: 28.4312, lon: -81.3081, name: 'Orlando Intl' },
-            'KSFO': { lat: 37.6213, lon: -122.3790, name: 'San Francisco Intl' },
-            'YSSY': { lat: -33.9399, lon: 151.1753, name: 'Sydney Kingsford Smith' }
+            // North America
+            'KJFK': { lat: 40.6413, lon: -73.7781, name: 'John F Kennedy Intl', city: 'New York', country: 'USA' },
+            'KLAX': { lat: 33.9425, lon: -118.4081, name: 'Los Angeles Intl', city: 'Los Angeles', country: 'USA' },
+            'KATL': { lat: 33.6407, lon: -84.4277, name: 'Atlanta Hartsfield', city: 'Atlanta', country: 'USA' },
+            'KORD': { lat: 41.9742, lon: -87.9073, name: 'Chicago O\'Hare', city: 'Chicago', country: 'USA' },
+            'KBOS': { lat: 42.3656, lon: -71.0096, name: 'Boston Logan', city: 'Boston', country: 'USA' },
+            'KDCA': { lat: 38.8512, lon: -77.0402, name: 'Reagan Washington', city: 'Washington DC', country: 'USA' },
+            'KLAS': { lat: 36.0840, lon: -115.1537, name: 'Las Vegas McCarran', city: 'Las Vegas', country: 'USA' },
+            'KMCO': { lat: 28.4312, lon: -81.3081, name: 'Orlando Intl', city: 'Orlando', country: 'USA' },
+            'KSFO': { lat: 37.6213, lon: -122.3790, name: 'San Francisco Intl', city: 'San Francisco', country: 'USA' },
+            'KIAH': { lat: 29.9902, lon: -95.3368, name: 'Houston Intercontinental', city: 'Houston', country: 'USA' },
+            'KPHX': { lat: 33.4342, lon: -112.0116, name: 'Phoenix Sky Harbor', city: 'Phoenix', country: 'USA' },
+            'KDEN': { lat: 39.8561, lon: -104.6737, name: 'Denver Intl', city: 'Denver', country: 'USA' },
+            'KMIA': { lat: 25.7931, lon: -80.2906, name: 'Miami Intl', city: 'Miami', country: 'USA' },
+            'KSEA': { lat: 47.4502, lon: -122.3088, name: 'Seattle Tacoma', city: 'Seattle', country: 'USA' },
+            'KDFW': { lat: 32.8998, lon: -97.0403, name: 'Dallas Fort Worth', city: 'Dallas', country: 'USA' },
+            'CYYZ': { lat: 43.6777, lon: -79.6248, name: 'Toronto Pearson', city: 'Toronto', country: 'Canada' },
+            'CYVR': { lat: 49.1939, lon: -123.1844, name: 'Vancouver Intl', city: 'Vancouver', country: 'Canada' },
+            'MMMX': { lat: 19.4363, lon: -99.0721, name: 'Mexico City Intl', city: 'Mexico City', country: 'Mexico' },
+            
+            // Europe
+            'EGLL': { lat: 51.4700, lon: -0.4543, name: 'London Heathrow', city: 'London', country: 'UK' },
+            'EDDF': { lat: 50.0379, lon: 8.5622, name: 'Frankfurt am Main', city: 'Frankfurt', country: 'Germany' },
+            'LFPG': { lat: 49.0097, lon: 2.5479, name: 'Paris Charles de Gaulle', city: 'Paris', country: 'France' },
+            'EHAM': { lat: 52.3086, lon: 4.7639, name: 'Amsterdam Schiphol', city: 'Amsterdam', country: 'Netherlands' },
+            'EDDB': { lat: 52.3667, lon: 13.5033, name: 'Berlin Brandenburg', city: 'Berlin', country: 'Germany' },
+            'LIRF': { lat: 41.8003, lon: 12.2389, name: 'Rome Fiumicino', city: 'Rome', country: 'Italy' },
+            'LEMD': { lat: 40.4839, lon: -3.5680, name: 'Madrid Barajas', city: 'Madrid', country: 'Spain' },
+            'EDDM': { lat: 48.3538, lon: 11.7861, name: 'Munich Airport', city: 'Munich', country: 'Germany' },
+            'LOWW': { lat: 48.1103, lon: 16.5697, name: 'Vienna Intl', city: 'Vienna', country: 'Austria' },
+            'LSZH': { lat: 47.4647, lon: 8.5492, name: 'Zurich Airport', city: 'Zurich', country: 'Switzerland' },
+            'EKCH': { lat: 55.6181, lon: 12.6558, name: 'Copenhagen Airport', city: 'Copenhagen', country: 'Denmark' },
+            'ESSA': { lat: 59.6519, lon: 17.9186, name: 'Stockholm Arlanda', city: 'Stockholm', country: 'Sweden' },
+            'UUEE': { lat: 55.9736, lon: 37.4125, name: 'Moscow Sheremetyevo', city: 'Moscow', country: 'Russia' },
+            'EGKK': { lat: 51.1481, lon: -0.1903, name: 'London Gatwick', city: 'London', country: 'UK' },
+            'LPPT': { lat: 38.7813, lon: -9.1357, name: 'Lisbon Portela', city: 'Lisbon', country: 'Portugal' },
+            
+            // Asia-Pacific
+            'RJTT': { lat: 35.7653, lon: 140.3864, name: 'Tokyo Narita', city: 'Tokyo', country: 'Japan' },
+            'RJBB': { lat: 34.7848, lon: 135.4381, name: 'Osaka Kansai', city: 'Osaka', country: 'Japan' },
+            'ZBAA': { lat: 40.0801, lon: 116.5846, name: 'Beijing Capital', city: 'Beijing', country: 'China' },
+            'ZSSS': { lat: 31.1979, lon: 121.3364, name: 'Shanghai Pudong', city: 'Shanghai', country: 'China' },
+            'VHHH': { lat: 22.3080, lon: 113.9185, name: 'Hong Kong Intl', city: 'Hong Kong', country: 'China' },
+            'WSSS': { lat: 1.3644, lon: 103.9915, name: 'Singapore Changi', city: 'Singapore', country: 'Singapore' },
+            'VTBS': { lat: 13.6900, lon: 100.7501, name: 'Bangkok Suvarnabhumi', city: 'Bangkok', country: 'Thailand' },
+            'RKSI': { lat: 37.4602, lon: 126.4407, name: 'Seoul Incheon', city: 'Seoul', country: 'South Korea' },
+            'RJAA': { lat: 35.5494, lon: 139.7798, name: 'Tokyo Haneda', city: 'Tokyo', country: 'Japan' },
+            'YSSY': { lat: -33.9399, lon: 151.1753, name: 'Sydney Kingsford Smith', city: 'Sydney', country: 'Australia' },
+            'YMML': { lat: -37.6690, lon: 144.8410, name: 'Melbourne Tullamarine', city: 'Melbourne', country: 'Australia' },
+            'NZAA': { lat: -36.9985, lon: 174.7872, name: 'Auckland Airport', city: 'Auckland', country: 'New Zealand' },
+            'VIDP': { lat: 28.5562, lon: 77.1000, name: 'Delhi Indira Gandhi', city: 'Delhi', country: 'India' },
+            'VOMM': { lat: 13.1979, lon: 80.1689, name: 'Chennai Airport', city: 'Chennai', country: 'India' },
+            'OPKC': { lat: 24.9065, lon: 67.1609, name: 'Karachi Jinnah', city: 'Karachi', country: 'Pakistan' },
+            
+            // Middle East
+            'OMDB': { lat: 25.2532, lon: 55.3657, name: 'Dubai Intl', city: 'Dubai', country: 'UAE' },
+            'OERK': { lat: 24.9576, lon: 46.6988, name: 'Riyadh King Khalid', city: 'Riyadh', country: 'Saudi Arabia' },
+            'OTHH': { lat: 25.2731, lon: 51.6081, name: 'Doha Hamad', city: 'Doha', country: 'Qatar' },
+            'LTBA': { lat: 40.9769, lon: 28.8146, name: 'Istanbul Airport', city: 'Istanbul', country: 'Turkey' },
+            'OIIE': { lat: 35.4161, lon: 51.1522, name: 'Tehran Imam Khomeini', city: 'Tehran', country: 'Iran' },
+            'LLBG': { lat: 32.0114, lon: 34.8867, name: 'Tel Aviv Ben Gurion', city: 'Tel Aviv', country: 'Israel' },
+            
+            // Africa
+            'FACT': { lat: -33.9648, lon: 18.6017, name: 'Cape Town Intl', city: 'Cape Town', country: 'South Africa' },
+            'FAOR': { lat: -26.1392, lon: 28.2460, name: 'Johannesburg OR Tambo', city: 'Johannesburg', country: 'South Africa' },
+            'HECA': { lat: 30.1219, lon: 31.4056, name: 'Cairo Intl', city: 'Cairo', country: 'Egypt' },
+            'HAAB': { lat: 9.0300, lon: 38.7999, name: 'Addis Ababa Bole', city: 'Addis Ababa', country: 'Ethiopia' },
+            'DTTA': { lat: 36.8510, lon: 10.2272, name: 'Tunis Carthage', city: 'Tunis', country: 'Tunisia' },
+            'GMMN': { lat: 33.3675, lon: -7.5898, name: 'Casablanca Mohammed V', city: 'Casablanca', country: 'Morocco' },
+            
+            // South America
+            'SBGR': { lat: -23.4356, lon: -46.4731, name: 'São Paulo Guarulhos', city: 'São Paulo', country: 'Brazil' },
+            'SAEZ': { lat: -34.8222, lon: -58.5358, name: 'Buenos Aires Ezeiza', city: 'Buenos Aires', country: 'Argentina' },
+            'SCEL': { lat: -33.3928, lon: -70.7858, name: 'Santiago Arturo Merino', city: 'Santiago', country: 'Chile' },
+            'SKBO': { lat: 4.7016, lon: -74.1469, name: 'Bogotá El Dorado', city: 'Bogotá', country: 'Colombia' },
+            'SPJC': { lat: -12.0219, lon: -77.1143, name: 'Lima Jorge Chávez', city: 'Lima', country: 'Peru' }
         };
         
         // Weather system
@@ -60,7 +122,7 @@ class AircraftTracker {
         
         // Tutorial system
         this.tutorialStep = 1;
-        this.tutorialMaxSteps = 8;
+        this.tutorialMaxSteps = 12; // Expanded for airline tycoon features
         this.tutorialCompleted = this.checkTutorialCompleted();
         
         this.init();
@@ -140,6 +202,16 @@ class AircraftTracker {
             this.updateAircraft(data);
         });
 
+        this.socket.on('time_speed_update', (data) => {
+            console.log(`⚡ Time speed updated to ${data.speed}x via WebSocket`);
+            this.timeSpeed = data.speed;
+            // Update the dropdown to reflect the new speed
+            const speedSelect = document.getElementById('time-speed');
+            if (speedSelect) {
+                speedSelect.value = data.speed;
+            }
+        });
+
         console.log('🚀 WebSocket initialized');
     }
 
@@ -164,6 +236,11 @@ class AircraftTracker {
         // Marketplace
         document.getElementById('load-marketplace').addEventListener('click', () => {
             this.loadMarketplace();
+        });
+
+        // AI Competition
+        document.getElementById('load-competition').addEventListener('click', () => {
+            this.loadAICompetition();
         });
 
         // 3D Flight Mode Controls
@@ -270,13 +347,21 @@ class AircraftTracker {
     }
 
     updateEconomicsDisplay(economics) {
-        // Update header controls
-        document.getElementById('cash-balance').textContent = `$${economics.cash_balance.toFixed(1)}M`;
-        document.getElementById('fleet-count').textContent = `${economics.fleet_size} aircraft`;
+        // Calculate combined net worth (cash + aircraft value + 12 months of profit potential)
+        const fleetValue = economics.fleet_value || 0; // Aircraft current value
+        const projectedAnnualProfit = economics.net_profit * 12;
+        const netWorth = economics.cash_balance + fleetValue + (projectedAnnualProfit > 0 ? projectedAnnualProfit * 0.1 : 0); // Add 10% of positive annual profit as enterprise value
         
-        const profitElement = document.getElementById('monthly-profit');
-        profitElement.textContent = `$${economics.net_profit.toFixed(0)}`;
-        profitElement.className = 'profit-amount ' + (economics.net_profit >= 0 ? 'positive' : 'negative');
+        // Update header controls with combined metrics
+        const netWorthElement = document.getElementById('net-worth');
+        netWorthElement.textContent = `$${netWorth.toFixed(1)}M`;
+        netWorthElement.className = 'net-worth-amount ' + (netWorth >= 250 ? 'positive' : (netWorth >= 100 ? 'neutral' : 'negative'));
+        
+        const cashFlowElement = document.getElementById('cash-flow');
+        cashFlowElement.textContent = `$${(economics.net_profit / 1000).toFixed(1)}k/mo`;
+        cashFlowElement.className = 'cash-flow-amount ' + (economics.net_profit >= 0 ? 'positive' : 'negative');
+        
+        document.getElementById('fleet-count').textContent = `${economics.fleet_size} aircraft`;
 
         // Update economics tab financial metrics
         if (document.getElementById('monthly-revenue')) {
@@ -686,14 +771,20 @@ class AircraftTracker {
             const color = flight.color || 'red';
             
             // Calculate proper heading towards destination
-            const heading = this.calculateProperHeading(flight);
+            const compassHeading = this.calculateProperHeading(flight);
             
-            console.log(`✈️ Creating marker for ${flight.name} with heading ${heading}°`);
+            // Convert compass heading to CSS rotation
+            // Compass: 0° = North, 90° = East, 180° = South, 270° = West
+            // Font Awesome plane icon points East (90°) by default
+            // So we need to subtract 90° to align north bearing with upward rotation
+            const cssRotation = (compassHeading - 90 + 360) % 360;
+            
+            console.log(`✈️ Creating marker for ${flight.name} with compass heading ${compassHeading.toFixed(1)}° → CSS rotation ${cssRotation.toFixed(1)}°`);
             
             // Create custom plane icon based on status
             const planeIcon = L.divIcon({
                 className: 'aircraft-marker',
-                html: `<i class="fas fa-plane" style="color: ${color}; font-size: 16px; transform: rotate(${heading}deg);"></i>`,
+                html: `<i class="fas fa-plane" style="color: ${color}; font-size: 16px; transform: rotate(${cssRotation}deg);"></i>`,
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
@@ -712,7 +803,7 @@ class AircraftTracker {
                 Progress: ${flight.progress.toFixed(1)}%<br>
                 Speed: ${flight.ground_speed} knots<br>
                 Altitude: ${flight.altitude} ft<br>
-                Heading: ${heading.toFixed(0)}°<br>
+                Heading: ${compassHeading.toFixed(0)}°<br>
                 ${weatherImpact.message ? `<br><span style="color: ${weatherImpact.color};">⚠️ ${weatherImpact.message}</span>` : ''}
             `);
 
@@ -1150,8 +1241,8 @@ class AircraftTracker {
                 const existingAircraft = this.aircraft3DModels.has(aircraftId);
                 
                 if (!existingAircraft) {
-                    // Calculate proper heading towards arrival airport
-                    const properHeading = this.calculateProperHeading(flight);
+                    // Calculate heading based on route (for new aircraft)
+                    const properHeading = this.calculateRouteHeading(flight);
                     
                     // Calculate altitude-based scale and position for 3D effect with auto-zoom
                     const altitudeMeters = flight.altitude_meters || (flight.altitude * 0.3048) || 10000;
@@ -1160,12 +1251,15 @@ class AircraftTracker {
                     console.log(`🛫 Aircraft ${flight.id} at ${flight.altitude}ft (${altitudeMeters}m), scale: ${scale}, status: ${flight.status}`);
                     
                     // Add new aircraft to globe with realistic 3D positioning
+                    // Apply heading offset for globe mode 3D model orientation
+                    const globeHeading = (properHeading + 270) % 360; // Adjust for model's forward direction (nose points forward)
+                    
                     await this.globeLayer3D.addMeshFromURL(
                         aircraftId,
                         "/static/models/aircraft/a340.glb", // Your local file
                         {
                             lngLat: [flight.lon, flight.lat],
-                            heading: properHeading,
+                            heading: globeHeading,
                             scale: scale, // Dynamic scale based on altitude
                             altitude: visualAltitude, // Realistic altitude for 3D positioning
                             altitudeReference: maptiler3d.AltitudeReference.MEAN_SEA_LEVEL,
@@ -1182,17 +1276,23 @@ class AircraftTracker {
                     
                     console.log(`✈️ Added aircraft ${flight.id} to globe at ${flight.lat}, ${flight.lon}`);
                 } else {
-                    // Calculate proper heading towards arrival airport
-                    const properHeading = this.calculateProperHeading(flight);
+                    // Update existing aircraft position with smooth animation
+                    const aircraftData = this.aircraft3DModels.get(aircraftId);
+                    
+                    // Calculate heading based on movement direction (same as 3D mode)
+                    const heading = this.calculateHeading(aircraftData.flight, flight);
                     
                     // Calculate altitude-based scale and position for 3D effect with auto-zoom
                     const altitudeMeters = flight.altitude_meters || (flight.altitude * 0.3048) || 10000;
                     const { scale, visualAltitude, cameraZoom } = this.calculateAircraftScale(flight, altitudeMeters);
                     
+                    // Apply heading offset for globe mode 3D model orientation
+                    const globeHeading = (heading + 270) % 360; // Adjust for model's forward direction (nose points forward)
+                    
                     // Update existing aircraft position with dynamic scaling
                     this.globeLayer3D.modifyMesh(aircraftId, {
                         lngLat: [flight.lon, flight.lat],
-                        heading: properHeading,
+                        heading: globeHeading,
                         scale: scale, // Dynamic scale based on altitude
                         altitude: visualAltitude // Realistic altitude for 3D positioning
                     });
@@ -1449,17 +1549,81 @@ class AircraftTracker {
     }
 
     calculateHeading(oldFlight, newFlight) {
-        // Calculate heading based on movement direction
-        if (!oldFlight) return newFlight.heading || 0;
+        // Calculate heading based on curved flight path direction
+        if (!oldFlight) {
+            // For new flights, calculate heading from route
+            return this.calculateRouteHeading(newFlight);
+        }
         
         const deltaLat = newFlight.lat - oldFlight.lat;
         const deltaLon = newFlight.lon - oldFlight.lon;
         
         if (Math.abs(deltaLat) < 0.0001 && Math.abs(deltaLon) < 0.0001) {
-            return newFlight.heading || 0; // No movement, keep current heading
+            // No movement, calculate heading from route
+            return this.calculateRouteHeading(newFlight);
         }
         
+        // Calculate heading based on actual movement direction
         let heading = Math.atan2(deltaLon, deltaLat) * 180 / Math.PI;
+        if (heading < 0) heading += 360;
+        
+        return heading;
+    }
+
+    calculateRouteHeading(flight) {
+        // Calculate heading based on route and progress for curved paths
+        if (!flight.route) return 0;
+        
+        const routeParts = flight.route.split(' → ');
+        if (routeParts.length !== 2) return 0;
+        
+        const depAirport = this.AIRPORTS[routeParts[0]];
+        const arrAirport = this.AIRPORTS[routeParts[1]];
+        
+        if (!depAirport || !arrAirport) return 0;
+        
+        // Calculate heading based on curved path tangent
+        const progress = (flight.progress || 0) / 100;
+        const heading = this.calculateCurvedPathHeading(
+            depAirport.lat, depAirport.lon,
+            arrAirport.lat, arrAirport.lon,
+            progress
+        );
+        
+        return heading;
+    }
+
+    calculateCurvedPathHeading(lat1, lon1, lat2, lon2, progress) {
+        // Calculate heading along curved path (tangent to the curve)
+        const deltaLat = lat2 - lat1;
+        const deltaLon = lon2 - lon1;
+        const distance = Math.sqrt(deltaLat * deltaLat + deltaLon * deltaLon);
+        
+        // For very short routes, use direct heading
+        if (distance < 5) {
+            let heading = Math.atan2(deltaLon, deltaLat) * 180 / Math.PI;
+            if (heading < 0) heading += 360;
+            return heading;
+        }
+        
+        // Calculate curve parameters (same as route visualization)
+        const midLat = (lat1 + lat2) / 2;
+        const midLon = (lon1 + lon2) / 2;
+        const curveOffset = Math.min(distance * 0.15, 15);
+        const perpLat = -deltaLon * (curveOffset / distance);
+        const perpLon = deltaLat * (curveOffset / distance);
+        const controlLat = midLat + perpLat;
+        const controlLon = midLon + perpLon;
+        
+        // Calculate tangent to curve at current progress
+        const t = progress;
+        
+        // Derivative of Bezier curve for tangent direction
+        const tangentLat = 2 * (1 - t) * (controlLat - lat1) + 2 * t * (lat2 - controlLat);
+        const tangentLon = 2 * (1 - t) * (controlLon - lon1) + 2 * t * (lon2 - controlLon);
+        
+        // Convert tangent to heading
+        let heading = Math.atan2(tangentLon, tangentLat) * 180 / Math.PI;
         if (heading < 0) heading += 360;
         
         return heading;
@@ -1609,6 +1773,11 @@ class AircraftTracker {
             console.log('🗺️ Routes loaded:', routes.length);
             console.log('📋 Assignments loaded:', assignments.length);
             
+            // Store routes for visualization
+            this.availableRoutes = routes;
+            
+            // Don't automatically show route network - let user control it with toggle button
+            
             // Populate aircraft dropdown with fleet aircraft (needed for assignments)
             const aircraftSelect = document.getElementById('aircraft-select');
             aircraftSelect.innerHTML = '<option value="">Select Aircraft</option>';
@@ -1683,7 +1852,12 @@ class AircraftTracker {
                 return;
             }
             
-            fleetList.innerHTML = ownedAircraft.map(aircraft => `
+            fleetList.innerHTML = ownedAircraft.map(aircraft => {
+                const isParked = aircraft.status === 'Parked' || aircraft.status === 'Active';
+                const hasRoutes = aircraft.route_assignments && aircraft.route_assignments.length > 0;
+                const canSell = isParked && !hasRoutes;
+                
+                return `
                 <div class="fleet-item">
                     <h5>${aircraft.registration || aircraft.id}</h5>
                     <div class="aircraft-details">
@@ -1691,10 +1865,42 @@ class AircraftTracker {
                         <p><strong>Location:</strong> ${aircraft.logLocation || aircraft.location || 'JFK'}</p>
                         <p><strong>Status:</strong> ${aircraft.status || 'Active'}</p>
                         ${aircraft.purchase_price ? `<p><strong>Value:</strong> $${aircraft.purchase_price.toFixed(1)}M</p>` : ''}
+                        ${aircraft.current_value ? `<p><strong>Current Value:</strong> $${aircraft.current_value.toFixed(1)}M</p>` : ''}
                         ${aircraft.monthly_payment ? `<p><strong>Monthly Payment:</strong> $${aircraft.monthly_payment.toFixed(1)}k</p>` : ''}
+                        ${hasRoutes ? `<p><strong>Routes:</strong> ${aircraft.route_assignments.length} assigned</p>` : ''}
+                    </div>
+                    <div class="fleet-actions">
+                        ${canSell ? 
+                            `<button class="btn btn-danger btn-sm sell-aircraft" data-aircraft-id="${aircraft.id}">
+                                <i class="fas fa-dollar-sign"></i> Sell Aircraft
+                            </button>` : 
+                            `<button class="btn btn-secondary btn-sm" disabled title="${!isParked ? 'Aircraft must be parked' : 'Remove from routes first'}">
+                                <i class="fas fa-ban"></i> Cannot Sell
+                            </button>`
+                        }
+                        <button class="btn btn-info btn-sm view-resale-value" data-aircraft-id="${aircraft.id}">
+                            <i class="fas fa-calculator"></i> Resale Value
+                        </button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
+            
+            // Add event listeners for sell buttons
+            document.querySelectorAll('.sell-aircraft').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const aircraftId = e.target.dataset.aircraftId || e.target.closest('button').dataset.aircraftId;
+                    this.sellAircraft(aircraftId);
+                });
+            });
+            
+            // Add event listeners for resale value buttons
+            document.querySelectorAll('.view-resale-value').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const aircraftId = e.target.dataset.aircraftId || e.target.closest('button').dataset.aircraftId;
+                    this.showResaleValue(aircraftId);
+                });
+            });
             
         } catch (error) {
             console.error('❌ Error loading fleet data:', error);
@@ -2083,85 +2289,12 @@ class AircraftTracker {
     }
 
     calculateProperHeading(flight) {
-        // Extract departure and arrival airports from route string
-        const routeParts = flight.route?.split(' → ') || ['', ''];
-        const depAirport = routeParts[0];
-        const arrAirport = routeParts[1];
+        // Use the new curved path heading calculation
+        const heading = this.calculateRouteHeading(flight);
         
-        console.log(`🧭 Calculating heading for ${flight.name}: ${depAirport} → ${arrAirport}`);
+        console.log(`🧭 Curved path heading for ${flight.name} (${flight.route}): ${heading.toFixed(1)}°`);
         
-        // Get airport coordinates (add more airports as needed)
-        const airports = {
-            'KJFK': { lat: 40.6413, lon: -73.7781 },
-            'KLAX': { lat: 33.9425, lon: -118.4081 },
-            'EGLL': { lat: 51.4700, lon: -0.4543 },
-            'EDDF': { lat: 50.0379, lon: 8.5622 },
-            'RJTT': { lat: 35.7653, lon: 140.3864 },
-            'OMDB': { lat: 25.2532, lon: 55.3657 },
-            'KATL': { lat: 33.6407, lon: -84.4277 },
-            'KORD': { lat: 41.9742, lon: -87.9073 },
-            'KBOS': { lat: 42.3656, lon: -71.0096 },
-            'KDCA': { lat: 38.8512, lon: -77.0402 },
-            'KLAS': { lat: 36.0840, lon: -115.1537 },
-            'KMCO': { lat: 28.4312, lon: -81.3081 },
-            'KSFO': { lat: 37.6213, lon: -122.3790 },
-            'YSSY': { lat: -33.9399, lon: 151.1753 }
-        };
-        
-        const destAirport = airports[arrAirport];
-        if (!destAirport) {
-            console.log(`❌ Destination airport ${arrAirport} not found, using fallback`);
-            return flight.heading || 0; // Fallback to provided heading
-        }
-        
-        console.log(`📍 Current: [${flight.lat}, ${flight.lon}] → Destination: [${destAirport.lat}, ${destAirport.lon}]`);
-        
-        // Calculate proper bearing using great circle navigation
-        const lat1 = flight.lat * Math.PI / 180;  // Current position latitude in radians
-        const lon1 = flight.lon * Math.PI / 180;  // Current position longitude in radians
-        const lat2 = destAirport.lat * Math.PI / 180;  // Destination latitude in radians
-        const lon2 = destAirport.lon * Math.PI / 180;  // Destination longitude in radians
-        
-        const deltaLon = lon2 - lon1;
-        
-        const y = Math.sin(deltaLon) * Math.cos(lat2);
-        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
-        
-        let bearing = Math.atan2(y, x) * 180 / Math.PI;
-        
-        // Normalize navigation bearing to 0-360
-        bearing = (bearing + 360) % 360;
-        
-        // Convert from navigation bearing to CSS rotation
-        // Navigation: 0° = North, 90° = East, 180° = South, 270° = West
-        // Font Awesome plane icon by default points to the RIGHT (east)
-        // So we need to subtract 90° to align north bearing with upward rotation
-        // bearing = 0° (north) → CSS rotation = -90° (up) → normalized = 270°
-        // bearing = 90° (east) → CSS rotation = 0° (right)
-        const cssRotation = (bearing - 90 + 360) % 360;
-        
-        console.log(`🧭 Calculated bearing: ${bearing.toFixed(1)}° → CSS rotation: ${cssRotation.toFixed(1)}°`);
-        
-        // Test some known cases for debugging
-        if (depAirport === 'KJFK' && arrAirport === 'KLAX') {
-            console.log('🧪 JFK→LAX should point roughly southwest (≈225°)');
-        } else if (depAirport === 'KLAX' && arrAirport === 'KJFK') {
-            console.log('🧪 LAX→JFK should point roughly northeast (≈45°)');
-        } else if (depAirport === 'KATL' && arrAirport === 'EDDF') {
-            console.log('🧪 KATL→EDDF (Atlanta→Frankfurt) should point northeast (≈45-60°)');
-            console.log(`🧪 Coordinates: KATL[33.64, -84.43] → EDDF[50.04, 8.56]`);
-            console.log(`🧪 Expected: Lat diff: ${destAirport.lat - flight.lat} (positive = north)`);
-            console.log(`🧪 Expected: Lon diff: ${destAirport.lon - flight.lon} (positive = east)`);
-            console.log(`🧪 This should be NORTHEAST direction (45-60°)`);
-            
-            // Manual verification of the calculation
-            const manualY = Math.sin((destAirport.lon * Math.PI / 180) - (flight.lon * Math.PI / 180)) * Math.cos(destAirport.lat * Math.PI / 180);
-            const manualX = Math.cos(flight.lat * Math.PI / 180) * Math.sin(destAirport.lat * Math.PI / 180) - Math.sin(flight.lat * Math.PI / 180) * Math.cos(destAirport.lat * Math.PI / 180) * Math.cos((destAirport.lon * Math.PI / 180) - (flight.lon * Math.PI / 180));
-            const manualBearing = Math.atan2(manualY, manualX) * 180 / Math.PI;
-            console.log(`🧪 Manual calculation: y=${manualY.toFixed(3)}, x=${manualX.toFixed(3)}, bearing=${((manualBearing + 360) % 360).toFixed(1)}°`);
-        }
-        
-        return cssRotation;
+        return heading;
     }
 
     calculateAircraftScale(flight, altitudeMeters) {
@@ -2369,9 +2502,15 @@ class AircraftTracker {
             console.log('📍 Route lines enabled');
             
             // Add route lines for all current flights
-            this.currentFlights.forEach(flight => {
-                this.addRouteLineForFlight(flight);
-            });
+            if (this.currentFlights && this.currentFlights.length > 0) {
+                this.currentFlights.forEach(flight => {
+                    this.addRouteLineForFlight(flight);
+                });
+            } else {
+                // If no active flights, show available routes from database
+                console.log('📍 No active flights, showing available routes');
+                this.showAvailableRoutes();
+            }
         } else {
             button.classList.remove('active');
             button.innerHTML = '<i class="fas fa-route"></i> Routes';
@@ -2382,6 +2521,60 @@ class AircraftTracker {
                 this.map.removeLayer(line);
             });
             this.routeLines.clear();
+            
+            // Also clear route network if showing
+            this.clearRouteNetwork();
+        }
+    }
+
+    async showAvailableRoutes() {
+        try {
+            // Load routes if not already loaded
+            if (!this.availableRoutes) {
+                console.log('📊 Loading routes for visualization...');
+                this.availableRoutes = await this.fetchAPI('/api/routes');
+            }
+            
+            // Display a sample of routes (first 30 to avoid clutter)
+            const sampleRoutes = this.availableRoutes.slice(0, 30);
+            console.log(`🗺️ Showing ${sampleRoutes.length} available routes`);
+            
+            sampleRoutes.forEach((route, index) => {
+                const depAirport = this.AIRPORTS[route.departure_airport];
+                const arrAirport = this.AIRPORTS[route.arrival_airport];
+                
+                if (depAirport && arrAirport) {
+                    // Create curved route line
+                    const routeLine = this.createCurvedRoute(
+                        [depAirport.lat, depAirport.lon], 
+                        [arrAirport.lat, arrAirport.lon], 
+                        {
+                            color: '#2196F3',
+                            weight: 2,
+                            opacity: 0.6,
+                            interactive: true
+                        }
+                    );
+                    
+                    // Add popup with route information
+                    routeLine.bindPopup(`
+                        <div class="route-popup">
+                            <h4>${route.departure_airport} → ${route.arrival_airport}</h4>
+                            <p><strong>Distance:</strong> ${route.distance_nm} nm</p>
+                            <p><strong>Base Price:</strong> $${route.base_ticket_price}</p>
+                            <p><strong>Route ID:</strong> ${route.id}</p>
+                        </div>
+                    `);
+                    
+                    routeLine.addTo(this.map);
+                    
+                    // Store in routeLines for cleanup
+                    this.routeLines.set(`route_${index}`, routeLine);
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Error showing available routes:', error);
         }
     }
 
@@ -2396,42 +2589,152 @@ class AircraftTracker {
         const depAirport = routeParts[0];
         const arrAirport = routeParts[1];
         
-        const airports = {
-            'KJFK': { lat: 40.6413, lon: -73.7781 },
-            'KLAX': { lat: 33.9425, lon: -118.4081 },
-            'EGLL': { lat: 51.4700, lon: -0.4543 },
-            'EDDF': { lat: 50.0379, lon: 8.5622 },
-            'RJTT': { lat: 35.7653, lon: 140.3864 },
-            'OMDB': { lat: 25.2532, lon: 55.3657 },
-            'KATL': { lat: 33.6407, lon: -84.4277 },
-            'KORD': { lat: 41.9742, lon: -87.9073 },
-            'KBOS': { lat: 42.3656, lon: -71.0096 },
-            'KDCA': { lat: 38.8512, lon: -77.0402 },
-            'KLAS': { lat: 36.0840, lon: -115.1537 },
-            'KMCO': { lat: 28.4312, lon: -81.3081 },
-            'KSFO': { lat: 37.6213, lon: -122.3790 },
-            'YSSY': { lat: -33.9399, lon: 151.1753 }
-        };
+        // Use the expanded AIRPORTS object that now contains 66+ airports
+        const dep = this.AIRPORTS[depAirport];
+        const arr = this.AIRPORTS[arrAirport];
         
-        const dep = airports[depAirport];
-        const arr = airports[arrAirport];
+        if (!dep || !arr) {
+            console.warn(`Route visualization: Missing airport data for ${depAirport} → ${arrAirport}`);
+            return;
+        }
         
-        if (!dep || !arr) return;
-        
-        // Create route line from departure to arrival
-        const routeLine = L.polyline([
-            [dep.lat, dep.lon],
-            [arr.lat, arr.lon]
-        ], {
+        // Create curved route line for better visualization
+        const routeLine = this.createCurvedRoute([dep.lat, dep.lon], [arr.lat, arr.lon], {
             color: flight.color || '#FF6B35',
             weight: 2,
             opacity: 0.7,
-            dashArray: '10, 10',
             interactive: false
         }).addTo(this.map);
         
         // Store the route line
         this.routeLines.set(flight.id, routeLine);
+    }
+
+    createCurvedRoute(start, end, options) {
+        // Create curved route optimized for 2D flat map projection
+        const [lat1, lon1] = start;
+        const [lat2, lon2] = end;
+        
+        // Calculate distance and direction
+        const deltaLat = lat2 - lat1;
+        const deltaLon = lon2 - lon1;
+        const distance = Math.sqrt(deltaLat * deltaLat + deltaLon * deltaLon);
+        
+        // For very short routes, use straight line
+        if (distance < 5) {
+            return L.polyline([start, end], options);
+        }
+        
+        // Calculate curve parameters for 2D map
+        const midLat = (lat1 + lat2) / 2;
+        const midLon = (lon1 + lon2) / 2;
+        
+        // Curve offset based on distance - smaller for 2D map
+        const curveOffset = Math.min(distance * 0.15, 15); // Max 15 degree offset
+        
+        // Calculate perpendicular direction for curve
+        const perpLat = -deltaLon * (curveOffset / distance);
+        const perpLon = deltaLat * (curveOffset / distance);
+        
+        // Control point for curve
+        const controlLat = midLat + perpLat;
+        const controlLon = midLon + perpLon;
+        
+        // Create smooth curved path
+        const points = [];
+        const numPoints = 15; // Fewer points for smoother performance
+        
+        for (let i = 0; i <= numPoints; i++) {
+            const t = i / numPoints;
+            
+            // Quadratic Bezier curve formula
+            const lat = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * controlLat + t * t * lat2;
+            const lon = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * controlLon + t * t * lon2;
+            
+            points.push([lat, lon]);
+        }
+        
+        return L.polyline(points, {
+            ...options,
+            smoothFactor: 0.5 // Better smoothing for 2D map
+        });
+    }
+
+    displayRouteNetwork(routes) {
+        // Clear existing route network
+        if (this.routeNetworkLayer) {
+            this.map.removeLayer(this.routeNetworkLayer);
+        }
+        
+        // Create new layer group for route network
+        this.routeNetworkLayer = L.layerGroup();
+        
+        console.log(`🗺️ Displaying ${routes.length} routes on map`);
+        
+        routes.forEach(route => {
+            const depAirport = this.AIRPORTS[route.departure_airport];
+            const arrAirport = this.AIRPORTS[route.arrival_airport];
+            
+            if (depAirport && arrAirport) {
+                // Create curved route line
+                const routeLine = this.createCurvedRoute(
+                    [depAirport.lat, depAirport.lon], 
+                    [arrAirport.lat, arrAirport.lon], 
+                    {
+                        color: '#4CAF50',
+                        weight: 1.5,
+                        opacity: 0.6,
+                        interactive: true
+                    }
+                );
+                
+                // Add popup with route information
+                routeLine.bindPopup(`
+                    <div class="route-popup">
+                        <h4>${route.departure_airport} → ${route.arrival_airport}</h4>
+                        <p><strong>Distance:</strong> ${route.distance_nm} nm</p>
+                        <p><strong>Base Price:</strong> $${route.base_ticket_price}</p>
+                        <p><strong>Route ID:</strong> ${route.id}</p>
+                    </div>
+                `);
+                
+                this.routeNetworkLayer.addLayer(routeLine);
+            }
+        });
+        
+        // Add route network to map
+        this.routeNetworkLayer.addTo(this.map);
+        
+        console.log('✅ Route network displayed on map');
+    }
+
+    clearRouteNetwork() {
+        if (this.routeNetworkLayer) {
+            this.map.removeLayer(this.routeNetworkLayer);
+            this.routeNetworkLayer = null;
+            console.log('🗺️ Route network cleared');
+        }
+    }
+
+    clearAllRouteVisualizations() {
+        // Clear both route network and route lines
+        this.clearRouteNetwork();
+        
+        // Clear route lines (from toggle button)
+        this.routeLines.forEach(line => {
+            this.map.removeLayer(line);
+        });
+        this.routeLines.clear();
+        
+        // Reset toggle button state
+        const button = document.getElementById('toggle-routes');
+        if (button) {
+            button.classList.remove('active');
+            button.innerHTML = '<i class="fas fa-route"></i> Routes';
+        }
+        this.routeLinesVisible = false;
+        
+        console.log('🧹 All route visualizations cleared');
     }
 
     initWeatherSystem() {
@@ -3294,6 +3597,229 @@ class AircraftTracker {
         }
         
         console.log('✅ Returned to main interface');
+    }
+    
+    // AI Competition Functions
+    async loadAICompetition() {
+        console.log('🤖 Loading AI competition data...');
+        
+        try {
+            const response = await fetch('/api/ai_competition');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayAICompetition(data);
+                this.showNotification('📊 Market competition updated', 'info');
+            } else {
+                this.showNotification(`❌ ${data.message}`, 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading AI competition:', error);
+            this.showNotification('❌ Error loading competition data', 'error');
+        }
+    }
+    
+    displayAICompetition(data) {
+        const competitionList = document.getElementById('ai-competition-list');
+        
+        if (!data.ai_airlines || data.ai_airlines.length === 0) {
+            competitionList.innerHTML = '<div class="no-data">No competitor airlines found</div>';
+            return;
+        }
+        
+        competitionList.innerHTML = data.ai_airlines.map(airline => {
+            const strategyIcon = {
+                'budget': 'fas fa-piggy-bank',
+                'premium': 'fas fa-crown',
+                'balanced': 'fas fa-balance-scale',
+                'aggressive': 'fas fa-fighter-jet'
+            }[airline.strategy] || 'fas fa-plane';
+            
+            const marketShareWidth = Math.max(airline.market_share * 100, 5); // Minimum 5% for visibility
+            const reputationStars = '★'.repeat(Math.round(airline.reputation * 5));
+            
+            return `
+                <div class="ai-airline-item">
+                    <div class="airline-header">
+                        <div class="airline-name">
+                            <i class="${strategyIcon}"></i>
+                            <strong>${airline.name}</strong>
+                            <span class="airline-code">(${airline.iata_code})</span>
+                        </div>
+                        <div class="airline-reputation" title="Reputation: ${(airline.reputation * 100).toFixed(0)}%">
+                            ${reputationStars}
+                        </div>
+                    </div>
+                    <div class="airline-details">
+                        <div class="detail-row">
+                            <span>Strategy:</span>
+                            <span class="strategy-${airline.strategy}">${airline.strategy.charAt(0).toUpperCase() + airline.strategy.slice(1)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Hub:</span>
+                            <span>${airline.hub_airport}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Fleet Size:</span>
+                            <span>${airline.fleet_size} aircraft</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Routes:</span>
+                            <span>${airline.route_count} routes</span>
+                        </div>
+                    </div>
+                    <div class="market-share-bar">
+                        <div class="market-share-label">Market Share: ${(airline.market_share * 100).toFixed(1)}%</div>
+                        <div class="market-share-background">
+                            <div class="market-share-fill" style="width: ${marketShareWidth}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'competition-summary';
+        summaryDiv.innerHTML = `
+            <div class="summary-header">
+                <h6><i class="fas fa-chart-bar"></i> Market Activity</h6>
+            </div>
+            <div class="summary-stats">
+                <div class="summary-stat">
+                    <span class="stat-label">Competitors:</span>
+                    <span class="stat-value">${data.ai_airlines.length}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-label">Market Activity:</span>
+                    <span class="stat-value">${data.market_activity || 0} recent moves</span>
+                </div>
+            </div>
+        `;
+        
+        competitionList.appendChild(summaryDiv);
+        
+        console.log(`✅ Loaded ${data.ai_airlines.length} competitor airlines`);
+    }
+    
+    // Aircraft Selling Functions
+    async sellAircraft(aircraftId) {
+        console.log(`💰 Attempting to sell aircraft: ${aircraftId}`);
+        
+        try {
+            // Confirm sale with user
+            if (!confirm('Are you sure you want to sell this aircraft? This action cannot be undone.')) {
+                return;
+            }
+            
+            const response = await fetch('/api/sell_aircraft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    aircraft_id: aircraftId
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification(`✅ ${result.message}`, 'success');
+                
+                // Refresh fleet display
+                this.loadFleetData();
+                
+                // Update financial displays
+                this.loadEconomics();
+                
+                console.log(`✅ Aircraft sold successfully for $${result.sale_price}M`);
+            } else {
+                this.showNotification(`❌ ${result.message}`, 'error');
+                console.error('❌ Failed to sell aircraft:', result.message);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error selling aircraft:', error);
+            this.showNotification('❌ Error selling aircraft', 'error');
+        }
+    }
+    
+    async showResaleValue(aircraftId) {
+        console.log(`📊 Getting resale value for: ${aircraftId}`);
+        
+        try {
+            const response = await fetch(`/api/aircraft_resale_value/${aircraftId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const modal = document.createElement('div');
+                modal.className = 'resale-value-modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-calculator"></i> Aircraft Resale Value</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="value-breakdown">
+                                <div class="value-item">
+                                    <span class="label">Current Book Value:</span>
+                                    <span class="value">$${result.current_value.toFixed(1)}M</span>
+                                </div>
+                                <div class="value-item">
+                                    <span class="label">Estimated Sale Price:</span>
+                                    <span class="value estimated">$${result.estimated_sale_price.toFixed(1)}M</span>
+                                </div>
+                                <div class="value-item total">
+                                    <span class="label">Net Proceeds:</span>
+                                    <span class="value">$${result.net_proceeds.toFixed(1)}M</span>
+                                </div>
+                            </div>
+                            <div class="sale-note">
+                                <i class="fas fa-info-circle"></i>
+                                Actual sale price may vary by ±10% due to market conditions
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal styles
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 2000;
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Close modal handlers
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    modal.remove();
+                });
+                
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+            } else {
+                this.showNotification(`❌ ${result.message}`, 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error getting resale value:', error);
+            this.showNotification('❌ Error getting resale value', 'error');
+        }
     }
 }
 

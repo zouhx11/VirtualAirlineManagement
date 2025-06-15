@@ -20,6 +20,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from modules.route_management import RouteEconomics
 from modules.aircraft_marketplace import AircraftMarketplace, AircraftCategory, FinancingType
+from modules.ai_competition import AICompetitionManager
 from core.config_manager import ConfigManager
 
 app = Flask(__name__)
@@ -28,6 +29,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Global variables
 config_manager = ConfigManager()
+ai_competition = AICompetitionManager("airline_game.db")
 
 # Initialize database if it doesn't exist
 def initialize_database_if_needed():
@@ -53,23 +55,34 @@ time_speed = 1.0
 # Reference time for consistent calculations
 reference_time = time.time()  # Fixed reference point
 
-# Airport coordinates
-AIRPORTS = {
-    'KJFK': {'lat': 40.6413, 'lon': -73.7781, 'name': 'John F Kennedy Intl'},
-    'KLAX': {'lat': 33.9425, 'lon': -118.4081, 'name': 'Los Angeles Intl'},
-    'EGLL': {'lat': 51.4700, 'lon': -0.4543, 'name': 'London Heathrow'},
-    'EDDF': {'lat': 50.0379, 'lon': 8.5622, 'name': 'Frankfurt am Main'},
-    'RJTT': {'lat': 35.7653, 'lon': 140.3864, 'name': 'Tokyo Narita'},
-    'OMDB': {'lat': 25.2532, 'lon': 55.3657, 'name': 'Dubai Intl'},
-    'KATL': {'lat': 33.6407, 'lon': -84.4277, 'name': 'Atlanta Hartsfield'},
-    'KORD': {'lat': 41.9742, 'lon': -87.9073, 'name': 'Chicago O\'Hare'},
-    'KBOS': {'lat': 42.3656, 'lon': -71.0096, 'name': 'Boston Logan'},
-    'KDCA': {'lat': 38.8512, 'lon': -77.0402, 'name': 'Reagan Washington'},
-    'KLAS': {'lat': 36.0840, 'lon': -115.1537, 'name': 'Las Vegas McCarran'},
-    'KMCO': {'lat': 28.4312, 'lon': -81.3081, 'name': 'Orlando Intl'},
-    'KSFO': {'lat': 37.6213, 'lon': -122.3790, 'name': 'San Francisco Intl'},
-    'YSSY': {'lat': -33.9399, 'lon': 151.1753, 'name': 'Sydney Kingsford Smith'},
-}
+# Load airports from database
+def load_airports():
+    """Load airports from database"""
+    try:
+        with sqlite3.connect(db_path) as conn:
+            query = """
+                SELECT icao, name, city, country, latitude, longitude
+                FROM airports
+                ORDER BY country, city
+            """
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(query)
+            airports = {}
+            for row in cursor.fetchall():
+                airports[row['icao']] = {
+                    'lat': row['latitude'],
+                    'lon': row['longitude'], 
+                    'name': row['name'],
+                    'city': row['city'],
+                    'country': row['country']
+                }
+            return airports
+    except Exception as e:
+        print(f"Error loading airports: {e}")
+        return {}
+
+# Load airports from database
+AIRPORTS = load_airports()
 
 def load_aircraft():
     """Load aircraft from database"""
@@ -104,6 +117,42 @@ def load_routes():
     except Exception as e:
         print(f"Error loading routes: {e}")
         return []
+
+def calculate_curved_position(lat1, lon1, lat2, lon2, progress):
+    """Calculate position along curved 2D route path - matches frontend curve calculation"""
+    
+    # Calculate distance and direction
+    delta_lat = lat2 - lat1
+    delta_lon = lon2 - lon1
+    distance = math.sqrt(delta_lat * delta_lat + delta_lon * delta_lon)
+    
+    # For very short routes, use straight line
+    if distance < 5:
+        lat = lat1 + (lat2 - lat1) * progress
+        lon = lon1 + (lon2 - lon1) * progress
+        return lat, lon
+    
+    # Calculate curve parameters for 2D map (same as frontend)
+    mid_lat = (lat1 + lat2) / 2
+    mid_lon = (lon1 + lon2) / 2
+    
+    # Curve offset based on distance - smaller for 2D map
+    curve_offset = min(distance * 0.15, 15)  # Max 15 degree offset
+    
+    # Calculate perpendicular direction for curve
+    perp_lat = -delta_lon * (curve_offset / distance)
+    perp_lon = delta_lat * (curve_offset / distance)
+    
+    # Control point for curve
+    control_lat = mid_lat + perp_lat
+    control_lon = mid_lon + perp_lon
+    
+    # Quadratic Bezier curve formula
+    t = progress
+    lat = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * control_lat + t * t * lat2
+    lon = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * control_lon + t * t * lon2
+    
+    return lat, lon
 
 def load_assignments():
     """Load current route assignments"""
@@ -187,8 +236,8 @@ def generate_active_flights(assignments, time_multiplier=1.0):
             else:
                 progress = raw_progress
                 
-            flight_lat = dep_lat + (arr_lat - dep_lat) * progress
-            flight_lon = dep_lon + (arr_lon - dep_lon) * progress
+            # Use curved path calculation for 2D map
+            flight_lat, flight_lon = calculate_curved_position(dep_lat, dep_lon, arr_lat, arr_lon, progress)
             
             lat_diff = arr_lat - dep_lat
             lon_diff = arr_lon - dep_lon
@@ -227,8 +276,8 @@ def generate_active_flights(assignments, time_multiplier=1.0):
             else:
                 progress = raw_progress
                 
-            flight_lat = arr_lat + (dep_lat - arr_lat) * progress
-            flight_lon = arr_lon + (dep_lon - arr_lon) * progress
+            # Use curved path calculation for 2D map (return flight: arr -> dep)
+            flight_lat, flight_lon = calculate_curved_position(arr_lat, arr_lon, dep_lat, dep_lon, progress)
             
             lat_diff = dep_lat - arr_lat
             lon_diff = dep_lon - arr_lon
@@ -443,6 +492,81 @@ def api_purchase():
         return jsonify({
             'success': False,
             'message': f'Purchase failed: {str(e)}'
+        })
+
+@app.route('/api/sell_aircraft', methods=['POST'])
+def api_sell_aircraft():
+    """Sell owned aircraft back to market"""
+    try:
+        data = request.get_json()
+        aircraft_id = data.get('aircraft_id')
+        
+        if not aircraft_id:
+            return jsonify({
+                'success': False,
+                'message': 'Aircraft ID is required'
+            })
+        
+        print(f"💰 Selling aircraft: {aircraft_id}")
+        
+        # Initialize marketplace
+        marketplace = AircraftMarketplace("airline_game.db")
+        
+        # Attempt to sell aircraft
+        success, message, sale_price = marketplace.sell_aircraft(aircraft_id)
+        
+        return jsonify({
+            'success': success,
+            'message': message,
+            'sale_price': sale_price
+        })
+        
+    except Exception as e:
+        print(f"❌ Sell aircraft API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Sale failed: {str(e)}'
+        })
+
+@app.route('/api/aircraft_resale_value/<aircraft_id>', methods=['GET'])
+def api_aircraft_resale_value(aircraft_id):
+    """Get estimated resale value for an aircraft"""
+    try:
+        print(f"📊 Getting resale value for: {aircraft_id}")
+        
+        # Initialize marketplace
+        marketplace = AircraftMarketplace("airline_game.db")
+        
+        # Get resale value
+        found, current_value, net_proceeds = marketplace.get_aircraft_resale_value(aircraft_id)
+        
+        if not found:
+            return jsonify({
+                'success': False,
+                'message': 'Aircraft not found'
+            })
+        
+        # Estimate sale price (similar to sell_aircraft logic)
+        import random
+        depreciation_factor = random.uniform(0.80, 0.90)
+        estimated_sale_price = current_value * depreciation_factor
+        
+        return jsonify({
+            'success': True,
+            'current_value': current_value,
+            'estimated_sale_price': estimated_sale_price,
+            'net_proceeds': net_proceeds
+        })
+        
+    except Exception as e:
+        print(f"❌ Resale value API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get resale value: {str(e)}'
         })
 
 @app.route('/api/assign_route', methods=['POST'])
@@ -718,6 +842,14 @@ def api_economics():
         except:
             cash_balance = 100.0
         
+        # Calculate fleet value from owned aircraft
+        fleet_value = 0
+        try:
+            owned_aircraft = aircraft_marketplace.get_owned_aircraft()
+            fleet_value = sum(aircraft.current_value for aircraft in owned_aircraft)
+        except:
+            fleet_value = 0
+        
         # Calculate monthly financial metrics
         monthly_revenue = 0
         monthly_costs = 0
@@ -732,6 +864,12 @@ def api_economics():
         
         for assignment in assignments:
             try:
+                # Validate assignment structure
+                required_fields = ['route_id', 'frequency_weekly', 'fare_economy', 'fare_business']
+                if not all(field in assignment for field in required_fields):
+                    print(f"Assignment missing required fields: {assignment}")
+                    continue
+                
                 # Simplified route profitability calculation
                 aircraft_spec = {
                     'passenger_capacity': 180,
@@ -748,6 +886,16 @@ def api_economics():
                     assignment['fare_business']
                 )
                 
+                # Check if analysis returned an error
+                if 'error' in analysis:
+                    print(f"Route analysis error for {assignment['route_id']}: {analysis['error']}")
+                    continue
+                
+                # Check if analysis has the expected structure
+                if 'revenue' not in analysis or 'costs' not in analysis or 'profitability' not in analysis:
+                    print(f"Invalid analysis structure for {assignment['route_id']}: {list(analysis.keys())}")
+                    continue
+                
                 route_revenue = analysis['revenue']['monthly_revenue']
                 route_costs = analysis['costs']['monthly_total']
                 route_profit = analysis['profitability']['monthly_profit']
@@ -756,7 +904,7 @@ def api_economics():
                 monthly_costs += route_costs
                 
                 # Add to cost breakdown
-                costs = analysis['costs']['breakdown']
+                costs = analysis['costs'].get('breakdown', {})
                 cost_breakdown['fuel'] += costs.get('fuel', 0)
                 cost_breakdown['crew'] += costs.get('crew', 0)
                 cost_breakdown['maintenance'] += costs.get('maintenance', 0)
@@ -824,6 +972,7 @@ def api_economics():
         
         return jsonify({
             'cash_balance': cash_balance,
+            'fleet_value': fleet_value,
             'monthly_revenue': monthly_revenue,
             'monthly_costs': monthly_costs,
             'net_profit': net_profit,
@@ -902,6 +1051,65 @@ def broadcast_aircraft_updates():
         except Exception as e:
             print(f"Error in broadcast thread: {e}")
             time.sleep(5)
+
+@app.route('/api/ai_competition', methods=['GET'])
+def api_ai_competition():
+    """Get AI competition status and market overview"""
+    try:
+        # Initialize AI airlines if they don't exist
+        if not ai_competition.ai_airlines:
+            ai_competition.initialize_ai_airlines(6)
+        
+        # Simulate AI decisions
+        decisions = ai_competition.simulate_ai_decisions()
+        
+        # Get competition data
+        airlines_data = []
+        for airline in ai_competition.ai_airlines:
+            airlines_data.append({
+                'name': airline.name,
+                'iata_code': airline.iata_code,
+                'strategy': airline.strategy.value,
+                'market_share': airline.market_share,
+                'reputation': airline.reputation,
+                'fleet_size': airline.fleet_size,
+                'route_count': airline.route_count,
+                'hub_airport': airline.hub_airport
+            })
+        
+        return jsonify({
+            'success': True,
+            'ai_airlines': airlines_data,
+            'recent_decisions': decisions,
+            'market_activity': len(decisions)
+        })
+        
+    except Exception as e:
+        print(f"❌ AI Competition API error: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get AI competition data: {str(e)}'
+        })
+
+@app.route('/api/route_competition/<origin>/<destination>', methods=['GET'])
+def api_route_competition(origin, destination):
+    """Get competition analysis for a specific route"""
+    try:
+        competition = ai_competition.get_route_competition(origin, destination)
+        
+        return jsonify({
+            'success': True,
+            'origin': origin,
+            'destination': destination,
+            **competition
+        })
+        
+    except Exception as e:
+        print(f"❌ Route Competition API error: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get route competition: {str(e)}'
+        })
 
 if __name__ == '__main__':
     # Start background thread for aircraft updates

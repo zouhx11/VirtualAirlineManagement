@@ -586,6 +586,130 @@ class AircraftMarketplace:
         conn.close()
         
         return balance_row[0] if balance_row else 0.0
+    
+    def sell_aircraft(self, aircraft_id: str) -> Tuple[bool, str, float]:
+        """
+        Sell an owned aircraft (only if parked)
+        Returns: (success, message, sale_price)
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # Get aircraft details
+            cursor.execute("SELECT * FROM owned_aircraft WHERE id = ?", (aircraft_id,))
+            aircraft_row = cursor.fetchone()
+            
+            if not aircraft_row:
+                return False, "Aircraft not found", 0.0
+            
+            # Check if aircraft is currently assigned to any routes
+            cursor.execute("SELECT COUNT(*) FROM route_assignments WHERE aircraft_id = ?", (aircraft_id,))
+            route_count = cursor.fetchone()[0]
+            
+            if route_count > 0:
+                return False, "Cannot sell aircraft - it has active route assignments. Remove from all routes first.", 0.0
+            
+            # Check if aircraft is currently flying (has active flights)
+            cursor.execute("""
+                SELECT COUNT(*) FROM flights 
+                WHERE aircraft_id = ? AND status IN ('departing', 'enroute', 'arriving')
+            """, (aircraft_id,))
+            active_flights = cursor.fetchone()[0]
+            
+            if active_flights > 0:
+                return False, "Cannot sell aircraft - it has active flights. Wait for flights to complete.", 0.0
+            
+            # Parse aircraft data
+            spec_data = json.loads(aircraft_row[16])
+            spec = self._dict_to_spec(spec_data)
+            
+            current_value = aircraft_row[7]  # current_value column
+            financing_type = FinancingType(aircraft_row[8])
+            remaining_payments = aircraft_row[10]
+            monthly_payment = aircraft_row[9]
+            
+            # Calculate sale price (market value with depreciation)
+            # Apply selling depreciation (typically 10-20% below market value)
+            depreciation_factor = random.uniform(0.80, 0.90)  # Sell for 80-90% of current value
+            sale_price = current_value * depreciation_factor
+            
+            # Handle financing obligations
+            outstanding_debt = 0.0
+            if financing_type in [FinancingType.LOAN, FinancingType.LEASE] and remaining_payments > 0:
+                outstanding_debt = monthly_payment * remaining_payments
+            
+            # Net proceeds after paying off debt
+            net_proceeds = max(0, sale_price - outstanding_debt)
+            
+            # Update cash balance
+            current_cash = self.get_current_cash_balance()
+            new_cash = current_cash + net_proceeds
+            
+            cursor.execute("""
+                INSERT INTO airline_finances (date, cash_balance, transaction_type, amount, description)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                datetime.now().isoformat(),
+                new_cash,
+                "aircraft_sale",
+                net_proceeds,
+                f"Sold {spec.model} (ID: {aircraft_id})"
+            ))
+            
+            # Remove aircraft from owned_aircraft
+            cursor.execute("DELETE FROM owned_aircraft WHERE id = ?", (aircraft_id,))
+            
+            # Remove from route assignments if any
+            cursor.execute("DELETE FROM route_assignments WHERE aircraft_id = ?", (aircraft_id,))
+            
+            conn.commit()
+            
+            message = f"Sold {spec.model} for ${sale_price:.1f}M"
+            if outstanding_debt > 0:
+                message += f" (${outstanding_debt:.1f}M debt paid off)"
+            message += f". Net proceeds: ${net_proceeds:.1f}M"
+            
+            return True, message, net_proceeds
+            
+        except Exception as e:
+            conn.rollback()
+            return False, f"Sale failed: {str(e)}", 0.0
+        finally:
+            conn.close()
+    
+    def get_aircraft_resale_value(self, aircraft_id: str) -> Tuple[bool, float, float]:
+        """
+        Get estimated resale value for an aircraft
+        Returns: (found, current_value, estimated_sale_price)
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT current_value, monthly_payment, remaining_payments, financing_type FROM owned_aircraft WHERE id = ?", (aircraft_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return False, 0.0, 0.0
+        
+        current_value = row[0]
+        monthly_payment = row[1] 
+        remaining_payments = row[2]
+        financing_type = FinancingType(row[3])
+        
+        # Estimate sale price (80-90% of current value)
+        depreciation_factor = random.uniform(0.80, 0.90)
+        estimated_sale_price = current_value * depreciation_factor
+        
+        # Calculate outstanding debt
+        outstanding_debt = 0.0
+        if financing_type in [FinancingType.LOAN, FinancingType.LEASE] and remaining_payments > 0:
+            outstanding_debt = monthly_payment * remaining_payments
+        
+        net_proceeds = max(0, estimated_sale_price - outstanding_debt)
+        
+        return True, current_value, net_proceeds
 
 
 # Example usage and testing

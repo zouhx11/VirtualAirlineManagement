@@ -397,7 +397,10 @@ class RouteEconomics:
             return {"error": "Route not found"}
         
         # Route characteristics with defaults for missing extended data
-        base_demand = DemandLevel(route_data[8]) if route_data[8] else DemandLevel.MEDIUM
+        try:
+            base_demand = DemandLevel(route_data[8]) if route_data[8] else DemandLevel.MEDIUM
+        except (ValueError, TypeError):
+            base_demand = DemandLevel.MEDIUM
         competition = route_data[4]
         market_fare = route_data[5]
         

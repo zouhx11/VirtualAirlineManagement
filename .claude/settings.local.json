@@ -46,7 +46,8 @@
       "Bash(venv/bin/python -m pip install:*)",
       "Bash(pip3 install:*)",
       "WebFetch(domain:sandcastle.cesium.com)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

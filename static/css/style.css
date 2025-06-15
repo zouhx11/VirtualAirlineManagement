@@ -73,6 +73,35 @@ body {
     color: #f44336;
 }
 
+/* New combined financial displays */
+.net-worth-amount {
+    font-weight: bold;
+}
+
+.net-worth-amount.positive {
+    color: #4CAF50; /* Green for high net worth (>= $250M) */
+}
+
+.net-worth-amount.neutral {
+    color: #FF9800; /* Orange for moderate net worth ($100-250M) */
+}
+
+.net-worth-amount.negative {
+    color: #f44336; /* Red for low net worth (< $100M) */
+}
+
+.cash-flow-amount {
+    font-weight: bold;
+}
+
+.cash-flow-amount.positive {
+    color: #4CAF50; /* Green for positive cash flow */
+}
+
+.cash-flow-amount.negative {
+    color: #f44336; /* Red for negative cash flow */
+}
+
 select, input {
     background: #444;
     color: white;
@@ -2899,4 +2928,141 @@ select:focus, input:focus {
     top: 20px;
     right: 20px;
     z-index: 1001;
+}
+
+/* AI Competition Styling */
+.ai-competition {
+    margin-top: 20px;
+}
+
+.competition-controls {
+    margin-bottom: 15px;
+}
+
+.ai-competition-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ai-airline-item {
+    background: #3a3a3a;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 12px;
+    border-left: 4px solid #4CAF50;
+}
+
+.airline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.airline-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.airline-name i {
+    color: #4CAF50;
+}
+
+.airline-code {
+    color: #bbb;
+    font-size: 0.9em;
+}
+
+.airline-reputation {
+    color: #FFD700;
+    font-size: 1.1em;
+}
+
+.airline-details {
+    margin-bottom: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.detail-row span:first-child {
+    color: #bbb;
+}
+
+.strategy-budget {
+    color: #FF5722;
+}
+
+.strategy-premium {
+    color: #9C27B0;
+}
+
+.strategy-balanced {
+    color: #2196F3;
+}
+
+.strategy-aggressive {
+    color: #FF9800;
+}
+
+.market-share-bar {
+    margin-top: 10px;
+}
+
+.market-share-label {
+    font-size: 0.85em;
+    color: #bbb;
+    margin-bottom: 4px;
+}
+
+.market-share-background {
+    height: 6px;
+    background: #2a2a2a;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.market-share-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    transition: width 0.3s ease;
+}
+
+.competition-summary {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.summary-header h6 {
+    margin: 0 0 10px 0;
+    color: #4CAF50;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.summary-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 0.8em;
+    color: #bbb;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #4CAF50;
 }
